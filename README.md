@@ -1,12 +1,20 @@
 # khipuFibra — plataforma web de artesanías
 
+## Fase 1: roles y autenticación
+
+La rama de desarrollo incorpora acceso con Google y correo, recuperación de contraseña, aprobación de cuentas, suspensión, invitaciones e historial administrativo. Requiere configurar Supabase y aplicar las migraciones en un entorno de prueba; no está desplegada ni validada con servicios reales.
+
+Consulta [la guía completa de Fase 1](docs/FASE_1.md) para configuración, administrador inicial, archivos modificados y pruebas. Para verificar localmente, con Node 24: `npm ci`, `npm run check`, `npm test` y `npm run build`. Usa `npm run preview` para servir el sitio en `http://localhost:4173`.
+
+El catálogo de demostración se conserva. El antiguo acceso privado de un clic queda desactivado: una cuenta real debe estar aprobada o invitada. Las notas siguientes describen la demostración anterior, no los permisos ni la persistencia de las cuentas conectadas.
+
 ## Cómo iniciar
 
 1. Descomprime el ZIP.
 2. Abre la carpeta `khipuFibra` con Visual Studio Code.
 3. Haz clic derecho en `index.html` y elige **Open with Live Server**.
 4. Navega por Inicio, Catálogo, Artesanas y los perfiles públicos.
-5. En **Soy artesana**, pulsa **Entrar a mi espacio**.
+5. En **Soy artesana**, inicia sesión después de completar la configuración de Fase 1.
 6. Desde **Agregar producto**, registra los datos y fotos, prepara una versión de la foto y una descripción, aprueba ambas y publica. Todos esos pasos están en la **misma página**.
 7. En **Difundir en redes**, selecciona un producto y prepara, revisa y copia el texto para Facebook, Instagram, TikTok o WhatsApp.
 
@@ -30,8 +38,8 @@ Las antiguas direcciones `estudio.html` y `revision.html` redirigen a `nuevo.htm
 - Favoritos, búsqueda, filtros, publicaciones, fotos propias y cambios de perfil se guardan en `localStorage`.
 - La preparación de descripciones utiliza variantes de plantilla editables. Las fotos se componen sobre un fondo uniforme sin eliminar el fondo original. **No usa IA real**.
 - Las publicaciones a redes no son automáticas; el sitio ayuda a preparar y copiar el contenido, abre las plataformas y permite compartir por WhatsApp.
-- El acceso de artesana sirve para recorrer el sistema, sin autenticación segura. No introduzcas datos privados.
-- No existe base de datos en línea: los datos agregados en un dispositivo no aparecen automáticamente en otros.
+- Sin Supabase configurado, solo está disponible el catálogo de demostración; el acceso privado queda bloqueado.
+- La persistencia remota requiere la configuración y las migraciones descritas en la guía de Fase 1.
 
 ## Datos de prueba y publicación
 

@@ -1,0 +1,19 @@
+{
+  "name": "khipufibra",
+  "version": "2.0.0-phase1",
+  "private": true,
+  "description": "Sitio estático khipuFibra; las dependencias son solo para pruebas locales.",
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "check": "node scripts/check.cjs",
+    "preview": "node scripts/preview.cjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.15",
+    "linkedom": "0.18.15"
+  }
+}

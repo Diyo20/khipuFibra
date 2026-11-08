@@ -1,0 +1,17 @@
+project_id = "khipufibra"
+
+[auth]
+site_url = "http://localhost:4173"
+additional_redirect_urls = ["http://localhost:4173/acceso.html", "http://localhost:4173/restablecer.html"]
+enable_signup = true
+minimum_password_length = 12
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+
+# The invitation function validates the user JWT with Auth.getUser() itself.
+# This supports projects using asymmetric JWT signing keys as well as legacy keys.
+[functions.admin-invite]
+verify_jwt = false
