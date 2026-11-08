@@ -15,3 +15,6 @@
 .social-net.on,.social-net:focus-visible{background:#245e4d;color:#fff;border-color:#245e4d;outline:2px solid #9ed7c3;outline-offset:2px}
 .social-net:hover:not(.on){background:#eff5ef}
 @media(max-width:650px){.social-network-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.social-net{min-height:60px}}
+.hero-title-accent {
+  color: #B76E45;
+}
