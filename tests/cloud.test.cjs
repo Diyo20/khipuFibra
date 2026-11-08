@@ -37,3 +37,9 @@ test('cross-tab sign-out clears data and dispatches outside the Auth callback',a
  assert.equal(cloud.user,null);assert.equal(events.length,0);assert.equal(sessionStorage.getItem('khipuFibra_private_a'),null);
  await new Promise(resolve=>setTimeout(resolve,10));assert.equal(events[0].detail.event,'SIGNED_OUT');
 });
+test('invitation errors show the server explanation without claiming a sent email',async()=>{
+ const {cloud,api}=setup();api.functions={invoke:async()=>({error:{context:{json:async()=>({error:'Espera un minuto antes de reenviar la invitación.'})}}})};
+ await assert.rejects(cloud.inviteArtisan('ana@example.test'),/Espera un minuto/);
+ api.functions.invoke=async()=>({error:{message:'Network error'}});
+ await assert.rejects(cloud.inviteArtisan('ana@example.test'),/No se pudo enviar/);
+});

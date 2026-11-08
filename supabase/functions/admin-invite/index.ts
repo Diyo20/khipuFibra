@@ -1,6 +1,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.119.0';
 
 // Never accept a redirect destination from the browser; configure it per environment.
+// Non-secret defaults for this approved pilot. Other projects must set an override.
+const pilotProjectUrl='https://yaksomcgqtnmsczvvyzs.supabase.co';
+const pilotInviteRedirect='https://khipufibra-git-develop-khipufibra-fase-1-khipu-fibra.vercel.app/restablecer.html';
 const cors = {
  'Access-Control-Allow-Origin': '*',
  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,7 +20,7 @@ Deno.serve(async req => {
   const url=Deno.env.get('SUPABASE_URL');
   const key=Deno.env.get('SUPABASE_ANON_KEY');
   const serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const redirect=Deno.env.get('KHIPU_INVITE_REDIRECT_URL');
+  const redirect=Deno.env.get('KHIPU_INVITE_REDIRECT_URL')||(url===pilotProjectUrl?pilotInviteRedirect:'');
   if(!url||!key||!serviceKey||!redirect)return response({error:'Las invitaciones todavía no están configuradas.'},503);
   const destination=new URL(redirect);
   if(destination.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(destination.hostname))return response({error:'Revisa la configuración de invitaciones.'},503);

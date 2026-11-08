@@ -4,7 +4,7 @@ Implementación del 8 de noviembre de 2026, en `develop/khipufibra-fase-1`.
 
 Las dos migraciones se aplicaron al proyecto existente con aprobación explícita del titular. Se conservaron las dos filas originales y se verificaron los permisos en el servidor y la API pública. El frontend incluye únicamente URL y clave pública, y el SDK está fijado en `2.119.0`. No se crearon cuentas permanentes ni se enviaron correos reales durante las pruebas.
 
-La rama utiliza Vercel Preview; no se ha mezclado con `main` ni promovido a producción. La configuración de URLs de Auth, el registro de la primera cuenta administradora y Google siguen pendientes. Consulta [el estado y los pasos actuales](APLICACION_FASE_1.md).
+La rama utiliza Vercel Preview; no se ha mezclado con `main` ni promovido a producción. El titular confirmó las URLs de Auth, registró y confirmó su cuenta y pudo entrar al panel después de la asignación restringida del rol administrador. `admin-invite` está desplegada con aprobación explícita y se verificó el rechazo de solicitudes sin autorización; el envío y aceptación de invitaciones y Google siguen pendientes. Consulta [el estado y los pasos actuales](APLICACION_FASE_1.md).
 
 ## Qué incluye
 
@@ -125,19 +125,19 @@ El panel no permite modificar ni suspender administradores. La incorporación po
 
 ## 6. Invitaciones por correo
 
-Desplegar exclusivamente la función nueva, en el proyecto de prueba:
+La función está desplegada en el proyecto piloto autorizado. Para futuros despliegues, usar exclusivamente el proyecto y la configuración de destino elegidos:
 
 ```text
 supabase functions deploy admin-invite
 ```
 
-Definir en los secretos del backend, desde el panel de Supabase:
+Para otro entorno o para cambiar el destino del piloto, definir en el backend desde el panel de Supabase:
 
 ```text
 KHIPU_INVITE_REDIRECT_URL=https://HOST_DE_PREVIEW/restablecer.html
 ```
 
-Esa URL debe estar autorizada en Auth. La plataforma proporciona `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` a la Edge Function. No copiar la service-role key al frontend, Vercel público, archivos de ejemplo ni registros.
+Esa URL debe estar autorizada en Auth. El código preparado incluye la URL pública fija de la vista previa como valor por defecto, exclusivamente para este proyecto piloto; otros proyectos deben configurar un destino propio. Antes de promover a producción debe definirse el destino de producción. La plataforma proporciona `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` a la Edge Function. No copiar la service-role key al frontend, Vercel público, archivos de ejemplo ni registros.
 
 La función verifica el JWT con `auth.getUser()` y comprueba el rol activo mediante SQL antes de usar la API administrativa. `verify_jwt=false` delega la verificación en esa comprobación explícita y permite proyectos con distintos tipos de claves de firma; no hace público el envío de invitaciones. No retirar esas comprobaciones.
 
@@ -163,7 +163,7 @@ En PowerShell con bloqueo de `npm.ps1`, usar `npm.cmd` en su lugar. El preview e
 
 Las pruebas SQL ejecutan las migraciones sin modificar sobre PostgreSQL embebido (PGlite), con contratos mínimos de `auth.users`, JWT y Storage. Comprueban roles reales de PostgreSQL y RLS. Las pruebas de formularios usan DOM simulado; las de la Edge Function simulan Auth y el proveedor de correo. No equivalen a una prueba alojada de Supabase Auth, envío real de correo, Deno o navegador móvil.
 
-Resultado actualizado: **45 comprobaciones locales aprobadas**, sintaxis y referencias HTML correctas y build con Supabase configurado. Además, pasaron 10 escenarios de permisos en Supabase, con todos sus datos temporales revertidos, y 4 comprobaciones HTTP con la clave pública: catálogo accesible, lista de correos y membresías protegidas y administración bloqueada sin sesión. El host de acceso al navegador automatizado no está disponible; no se completó la revisión visual. No se ejecutó `deno check` ni se desplegó la Edge Function.
+Resultado actualizado: **47 comprobaciones locales aprobadas**, sintaxis y referencias HTML correctas y build con Supabase configurado. Además, pasaron 10 escenarios de permisos en Supabase, con todos sus datos temporales revertidos, y 4 comprobaciones HTTP con la clave pública: catálogo accesible, lista de correos y membresías protegidas y administración bloqueada sin sesión. El titular completó registro, confirmación y acceso al panel como administrador activo. `admin-invite` está activa y pasó 4 comprobaciones HTTP: OPTIONS 200, GET 405, POST sin sesión 401 y POST con token inválido 401. No se enviaron invitaciones de prueba. El host de acceso al navegador automatizado no está disponible; no se completó la revisión visual. No se ejecutó `deno check` por separado; el servicio desplegado respondió correctamente.
 
 ## 8. Prueba de aceptación en Preview
 
@@ -182,7 +182,7 @@ Usar ventanas o perfiles de navegador separados para administrador, artesana A y
 
 ## Pendientes y límites
 
-- El esquema y los permisos remotos están verificados. Google, SMTP, confirmación/recuperación por correo real, Deno, invitaciones y dispositivos reales requieren completar los pasos anteriores.
+- El esquema y los permisos remotos están verificados; el titular confirmó registro y acceso administrativo. Google, recuperación por correo real, entrega y aceptación de invitaciones, configuración de correo para el piloto y dispositivos reales requieren completar los pasos anteriores.
 - No se midieron layout, accesibilidad ni rendimiento en navegador real. Las verificaciones DOM no miden esos aspectos.
 - Los buckets existentes siguen siendo públicos: suspender/ocultar no revoca una URL de imagen previamente conocida. Los borradores con medios privados se resolverán en Fase 2.
 - Permanecen los datos ficticios del catálogo; deben señalarse o sustituirse antes del piloto público.

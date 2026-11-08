@@ -4,12 +4,14 @@ const {stripTypeScriptTypes}=require('node:module');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
-function setup({valid=true,admin=true,deliveryError=false}={}){
+function setup({valid=true,admin=true,deliveryError=false,usePilotDefault=false,noRedirect=false}={}){
  let handler;const calls=[];
  const caller={auth:{getUser:async()=>({data:{user:valid?{id:'admin'}:null},error:null})},rpc:async(name,params)=>{calls.push([name,params]);return {data:name==='khipu_is_admin'?admin:{id:'invitation-id'},error:null};}};
  const server={auth:{admin:{inviteUserByEmail:async(email,options)=>{calls.push(['email',email,options]);return {error:deliveryError?{message:'provider failure'}:null};}}},rpc:async(name,params)=>{calls.push([name,params]);return {error:null};}};
  const createClient=(_url,key)=>key==='service-secret'?server:caller;
  const env={SUPABASE_URL:'https://project.example',SUPABASE_ANON_KEY:'public',SUPABASE_SERVICE_ROLE_KEY:'service-secret',KHIPU_INVITE_REDIRECT_URL:'https://preview.example/restablecer.html'};
+ if(usePilotDefault){env.SUPABASE_URL='https://yaksomcgqtnmsczvvyzs.supabase.co';delete env.KHIPU_INVITE_REDIRECT_URL;}
+ if(noRedirect)delete env.KHIPU_INVITE_REDIRECT_URL;
  const source=fs.readFileSync(path.join(__dirname,'../supabase/functions/admin-invite/index.ts'),'utf8').replace(/^import[^\n]+\n/,'');
  vm.runInNewContext(stripTypeScriptTypes(source),{createClient,Deno:{env:{get:name=>env[name]},serve:fn=>{handler=fn;}},Response,URL,TextDecoder,Uint8Array});
  const request=(body='{"email":"ana@example.test"}',token='valid-token')=>new Request('https://edge.example/admin-invite',{method:'POST',headers:token?{Authorization:'Bearer '+token}:{},body});
@@ -30,4 +32,9 @@ test('provider failure is recorded and never reported as an email sent',async()=
 });
 test('successful invitations record delivery and return no credentials',async()=>{
  const {handler,request,calls}=setup();const body=await (await handler(request())).json();assert.equal(body.delivered,true);assert.equal(calls.find(call=>call[0]==='khipu_invitation_delivery')[1].succeeded,true);assert.equal(JSON.stringify(body).includes('valid-token'),false);
+});
+test('pilot default redirect is fixed and never applies to another project',async()=>{
+ const pilot=setup({usePilotDefault:true});assert.equal((await pilot.handler(pilot.request())).status,200);
+ assert.equal(pilot.calls.find(call=>call[0]==='email')[2].redirectTo,'https://khipufibra-git-develop-khipufibra-fase-1-khipu-fibra.vercel.app/restablecer.html');
+ const other=setup({noRedirect:true});assert.equal((await other.handler(other.request())).status,503);assert.equal(other.calls.some(call=>call[0]==='email'),false);
 });

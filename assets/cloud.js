@@ -52,7 +52,7 @@ async function updatePassword(password){requireApi();const r=await api.auth.upda
 async function logout(){requireApi();const {error}=await api.auth.signOut();fail(error);currentUser=null;approved=false;membership=null;clearPrivate();}
 async function adminData(){requireApi();const r=await api.rpc('khipu_admin_dashboard');fail(r.error);return r.data;}
 async function manageMember(userId,action){requireApi();const r=await api.rpc('khipu_manage_member',{target_user:userId,action});fail(r.error);return r.data;}
-async function inviteArtisan(email){requireApi();const r=await api.functions.invoke('admin-invite',{body:{email:email.trim()}});fail(r.error);if(r.data?.error)throw Error(r.data.error);return r.data;}
+async function inviteArtisan(email){requireApi();const r=await api.functions.invoke('admin-invite',{body:{email:email.trim()}});if(r.error){let detail;try{detail=await r.error.context?.json();}catch{}throw Error(detail?.error||'No se pudo enviar la invitación. Revisa tu conexión o vuelve a entrar a tu cuenta.');}if(r.data?.error)throw Error(r.data.error);return r.data;}
 async function revokeInvitation(invitationId){requireApi();const r=await api.rpc('khipu_revoke_invitation',{invitation_id:invitationId});fail(r.error);}
 window.khipuCloud={enabled,init,list,myProfile,saveProfile,uploadAvatar,saveProduct,sendReview,generateDescription,login,loginWithPassword,requestAccount,recoverPassword,updatePassword,authSettings,logout,clearPrivate,adminData,manageMember,inviteArtisan,revokeInvitation,get approved(){return approved},get membership(){return membership},get user(){return currentUser},get client(){return api}};
 })();

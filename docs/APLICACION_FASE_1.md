@@ -1,7 +1,11 @@
 # Aplicación de la Fase 1 al proyecto existente
 
 Proyecto revisado: `yaksomcgqtnmsczvvyzs` (Diyo20's Project).
-Estado actualizado, 8 de noviembre de 2026: **ambas migraciones aplicadas con aprobación explícita del titular**. Se verificó el respaldo, la conservación de datos y los permisos remotos. Continúan pendientes los ajustes de URL Configuration y las pruebas de correo/Google.
+Estado actualizado, 8 de noviembre de 2026: **ambas migraciones aplicadas con aprobación explícita del titular**. Se verificó el respaldo, la conservación de datos y los permisos remotos. El titular confirmó la configuración de URLs de Auth y el acceso administrativo. Continúan pendientes recuperación por correo, Google y el envío real de invitaciones.
+
+Actualización de acceso: el titular informó que guardó las URLs de Auth, creó y confirmó su cuenta. Se verificó `email_confirmed_at`, se ejecutó el procedimiento restringido de administrador inicial y se comprobó rol `admin`, estado `active` y evento de auditoría. El titular confirmó que pudo entrar al panel. Su correo personal no se incorpora al código público.
+
+La función `admin-invite` se desplegó después de la aprobación explícita del titular. Estado verificado: `ACTIVE`, versión 1. Se probaron preflight (200), método no permitido (405), solicitud sin sesión (401) y token inválido (401). No se prepararon ni enviaron invitaciones durante las comprobaciones. Google OAuth y la recuperación por correo siguen pendientes de prueba.
 
 Migraciones registradas en Supabase y sincronizadas con los nombres de archivo del repositorio:
 
@@ -42,13 +46,14 @@ El primer intento fue rechazado por revisión automática y no ejecutó cambios.
 
 ## Validación completada
 
-- **45 comprobaciones locales aprobadas**, incluyendo migración sobre un esquema parcial existente, conservación de filas, separación de cuentas, restricciones administrativas y funciones privilegiadas fuera de `public`.
+- **47 comprobaciones locales aprobadas**, incluyendo migración sobre un esquema parcial existente, conservación de filas, separación de cuentas, restricciones administrativas, funciones privilegiadas fuera de `public`, errores comprensibles en invitaciones y destino de correo fijo para el piloto.
 - Respaldo excluido de Git y de la publicación.
 - 10 escenarios de permisos aprobados en Supabase mediante `supabase/tests/phase1_remote_smoke.sql`. La subtransacción de pruebas revirtió todas las cuentas, productos, objetos y acciones sintéticas.
 - Pruebas HTTP con clave pública: catálogo 200; correos privados 401; membresías privadas 401; administración sin sesión 401.
+- Pruebas HTTP de `admin-invite`: OPTIONS 200, GET 405, POST sin sesión 401 y POST con token inválido 401. El despliegue está activo y la validación del usuario se realiza en el cuerpo de la función.
 - Advisories sin WARN/ERROR: permanecen avisos informativos de RLS sin políticas en tablas que no tienen permisos directos del navegador, e índices nuevos aún sin uso.
 
-Las pruebas de registro, confirmación y recuperación reales, SMTP, Google, invitaciones y navegador siguen pendientes. Las pruebas SQL simulan identidad mediante los roles de PostgreSQL; no sustituyen un inicio de sesión real con JWT.
+El titular completó registro, confirmación y acceso real al panel. La recuperación real, Google, envío de invitaciones y revisión visual automatizada siguen pendientes. Las pruebas SQL entre artesanas simulan identidad mediante los roles de PostgreSQL; no sustituyen un inicio de sesión con dos artesanas reales.
 
 ## Continuación
 
@@ -56,21 +61,21 @@ Las pruebas de registro, confirmación y recuperación reales, SMTP, Google, inv
 2. Completado: sincronizar las versiones y volver a ejecutar las pruebas locales.
 3. Completado: probar permisos remotos y revisar asesores sin dejar datos sintéticos permanentes.
 4. Configuración pública completada en la rama de desarrollo. Generar y comprobar su nueva Vercel Preview; no mezclar con `main` ni promover a producción.
-5. Configurar las URLs permitidas de Auth para esta vista previa:
+5. Completado según confirmación del titular: configurar las URLs permitidas de Auth para esta vista previa:
 
 ```text
 https://khipufibra-git-develop-khipufibra-fase-1-khipu-fibra.vercel.app/acceso.html
 https://khipufibra-git-develop-khipufibra-fase-1-khipu-fibra.vercel.app/restablecer.html
 ```
 
-6. El titular crea y confirma su cuenta mediante correo. Solo después se asignará el rol administrador al correo que indicó, usando el procedimiento restringido. No se guarda ese correo personal en código público ni se pide una contraseña por el chat.
+6. Completado: el titular creó y confirmó su cuenta; se asignó el rol administrador con el procedimiento restringido y se verificó su auditoría. El titular confirmó el acceso al panel.
 7. Preparar el cliente OAuth de Google. El callback del proyecto es:
 
 ```text
 https://yaksomcgqtnmsczvvyzs.supabase.co/auth/v1/callback
 ```
 
-8. Desplegar y configurar la función de invitaciones después de verificar el rol administrador y el destino autorizado de los correos. No se enviarán correos de prueba a terceros sin indicación del titular.
+8. Completado: desplegar `admin-invite` con aprobación explícita y comprobar el rechazo de peticiones anónimas o inválidas. El destino fijo de este piloto está en el código del servidor, solo se aplica al proyecto verificado y puede reemplazarse con `KHIPU_INVITE_REDIRECT_URL`. La función comprueba sesión y rol activo antes de usar la API administrativa. Para una prueba de envío real se necesitará que el titular indique el destinatario o la realice desde el panel; todavía no se afirma que la entrega y aceptación de correo estén probadas.
 
 La integración actual permite consultar la base y desplegar funciones, pero no expone una operación para editar los parámetros de Google/SMTP/URL Configuration de Auth. Esos ajustes pueden requerir intervención del titular en el panel. Google OAuth aún no está creado; el primer recorrido se probará mediante correo.
 
