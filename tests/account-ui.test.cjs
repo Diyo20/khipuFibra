@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {parseHTML}=require('linkedom');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-async function setup(page,auth,{enabled=true}={}){
+async function setup(page,auth,{enabled=true,google=null}={}){
  const html=fs.readFileSync(path.join(__dirname,'..',page+'.html'),'utf8');
  const {document,HTMLInputElement,HTMLFormElement}=parseHTML(html);
  HTMLInputElement.prototype.setCustomValidity=function(message){this.validationMessage=message;};
@@ -15,7 +15,7 @@ async function setup(page,auth,{enabled=true}={}){
  let current=auth;
  const window={addEventListener:(type,fn)=>{listeners[type]=fn;}};
  const location={href:'https://preview.example/'+page+'.html',replace:url=>calls.push(['redirect',url])};
- const cloud={enabled,init:async()=>current,login:async()=>calls.push(['google']),loginWithPassword:async(email,password)=>calls.push(['password',email,password]),requestAccount:async(...values)=>calls.push(['signup',...values]),recoverPassword:async email=>calls.push(['recover',email]),updatePassword:async password=>calls.push(['update',password]),logout:async()=>{calls.push(['logout']);setImmediate(()=>listeners['khipu:auth-change']?.({detail:{event:'SIGNED_OUT'}}));}};
+ const cloud={enabled,init:async()=>current,authSettings:async()=>google===null?null:{google},login:async()=>calls.push(['google']),loginWithPassword:async(email,password)=>calls.push(['password',email,password]),requestAccount:async(...values)=>calls.push(['signup',...values]),recoverPassword:async email=>calls.push(['recover',email]),updatePassword:async password=>calls.push(['update',password]),logout:async()=>{calls.push(['logout']);setImmediate(()=>listeners['khipu:auth-change']?.({detail:{event:'SIGNED_OUT'}}));}};
  window.khipuCloud=cloud;
  class FormData {constructor(form){this.values=new Map([...form.querySelectorAll('input')].map(input=>[input.name,input.value]));}get(key){return this.values.get(key)??null;}}
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/auth-ui.js'),'utf8'),{window,document,location,FormData,console});
@@ -23,6 +23,12 @@ async function setup(page,auth,{enabled=true}={}){
  return {document,cloud,calls,setAuth:value=>{current=value;},emit:event=>listeners['khipu:auth-change']?.(event)};
 }
 const anonymous={user:null,membership:null};
+test('Google is unavailable in the UI when disabled in Supabase',async()=>{
+ const {document}=await setup('acceso',anonymous,{google:false});
+ assert.equal(document.getElementById('googleLogin').disabled,true);
+ assert.match(document.getElementById('googleNotice').textContent,/entra con tu correo/);
+ assert.ok(document.getElementById('loginForm'));
+});
 test('unconfigured access never offers a one-click mock login',async()=>{
  const {document}=await setup('acceso',anonymous,{enabled:false});
  assert.match(document.querySelector('h1').textContent,/preparación/);

@@ -2,7 +2,7 @@
 
 ## Fase 1: roles y autenticación
 
-La rama de desarrollo incorpora acceso con Google y correo, recuperación de contraseña, aprobación de cuentas, suspensión, invitaciones e historial administrativo. Requiere configurar Supabase y aplicar las migraciones en un entorno de prueba; no está desplegada ni validada con servicios reales.
+La rama de desarrollo incorpora acceso con Google y correo, recuperación de contraseña, aprobación de cuentas, suspensión, invitaciones e historial administrativo. Las migraciones están aplicadas y los permisos fueron comprobados en el Supabase existente. La vista previa utiliza su configuración pública. Quedan pendientes la configuración de URLs de Auth, las pruebas de correo real, la primera cuenta administradora y Google OAuth; Google aparece deshabilitado mientras no esté disponible en Supabase.
 
 Consulta [la guía completa de Fase 1](docs/FASE_1.md) para configuración, administrador inicial, archivos modificados y pruebas. Para verificar localmente, con Node 24: `npm ci`, `npm run check`, `npm test` y `npm run build`. Usa `npm run preview` para servir el sitio en `http://localhost:4173`.
 

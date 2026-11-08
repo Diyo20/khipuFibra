@@ -2,6 +2,10 @@
 -- Existing policies on these two application tables are replaced deliberately.
 begin;
 
+create schema khipu_private;
+revoke all on schema khipu_private from public;
+grant usage on schema khipu_private to anon,authenticated,service_role;
+
 create table public.khipu_memberships (
  user_id uuid primary key references auth.users(id) on delete restrict,
  email text not null,
@@ -31,8 +35,11 @@ create table public.khipu_admin_events (
  created_at timestamptz not null default now()
 );
 create index on public.khipu_memberships(status,created_at);
+create index on public.khipu_memberships(email);
 create index on public.khipu_admin_events(created_at desc);
 create index on public.khipu_admin_events(actor_id,action,created_at desc);
+create index on public.productos(owner_id);
+create index on public.productos(artisan_id);
 alter table public.khipu_memberships enable row level security;
 alter table public.khipu_invitations enable row level security;
 alter table public.khipu_admin_events enable row level security;
@@ -248,4 +255,52 @@ create policy phase1_storage_delete_guard on storage.objects as restrictive for 
 create policy phase1_storage_anon_write_guard on storage.objects as restrictive for all to anon
  using(bucket_id not in ('productos','perfiles')) with check(bucket_id not in ('productos','perfiles'));
 -- Known public image URLs stay public; migrating draft media is Phase 2.
+
+-- Privileged implementations live outside the exposed public API schema. Their
+-- existing ACLs follow the move; wrappers below have explicit caller privileges.
+alter function public.khipu_is_admin() set schema khipu_private;
+alter function public.soy_artesana_autorizada() set schema khipu_private;
+alter function public.khipu_request_access() set schema khipu_private;
+alter function public.khipu_manage_member(uuid,text) set schema khipu_private;
+alter function public.khipu_prepare_invitation(text) set schema khipu_private;
+alter function public.khipu_revoke_invitation(uuid) set schema khipu_private;
+alter function public.khipu_invitation_delivery(uuid,boolean) set schema khipu_private;
+alter function public.khipu_admin_dashboard() set schema khipu_private;
+alter function public.khipu_bootstrap_admin(uuid) set schema khipu_private;
+alter function public.khipu_public_catalog() set schema khipu_private;
+revoke execute on all functions in schema khipu_private from public;
+
+create function public.khipu_is_admin() returns boolean language sql stable security invoker set search_path=''
+as $$ select khipu_private.khipu_is_admin(); $$;
+create function public.soy_artesana_autorizada() returns boolean language sql stable security invoker set search_path=''
+as $$ select khipu_private.soy_artesana_autorizada(); $$;
+create function public.khipu_request_access() returns jsonb language sql security invoker set search_path=''
+as $$ select khipu_private.khipu_request_access(); $$;
+create function public.khipu_manage_member(target_user uuid,action text) returns jsonb language sql security invoker set search_path=''
+as $$ select khipu_private.khipu_manage_member(target_user,action); $$;
+create function public.khipu_prepare_invitation(invite_email text) returns jsonb language sql security invoker set search_path=''
+as $$ select khipu_private.khipu_prepare_invitation(invite_email); $$;
+create function public.khipu_revoke_invitation(invitation_id uuid) returns void language sql security invoker set search_path=''
+as $$ select khipu_private.khipu_revoke_invitation(invitation_id); $$;
+create function public.khipu_invitation_delivery(invitation_id uuid,succeeded boolean) returns void language sql security invoker set search_path=''
+as $$ select khipu_private.khipu_invitation_delivery(invitation_id,succeeded); $$;
+create function public.khipu_admin_dashboard() returns jsonb language sql stable security invoker set search_path=''
+as $$ select khipu_private.khipu_admin_dashboard(); $$;
+create function public.khipu_bootstrap_admin(admin_user uuid) returns void language sql security invoker set search_path=''
+as $$ select khipu_private.khipu_bootstrap_admin(admin_user); $$;
+create function public.khipu_public_catalog() returns jsonb language sql stable security invoker set search_path=''
+as $$ select khipu_private.khipu_public_catalog(); $$;
+
+revoke all on function public.khipu_is_admin(),public.soy_artesana_autorizada(),public.khipu_request_access(),public.khipu_manage_member(uuid,text),public.khipu_prepare_invitation(text),public.khipu_revoke_invitation(uuid),public.khipu_invitation_delivery(uuid,boolean),public.khipu_admin_dashboard(),public.khipu_bootstrap_admin(uuid),public.khipu_public_catalog() from public,anon,authenticated,service_role;
+grant execute on function public.khipu_is_admin(),public.soy_artesana_autorizada(),public.khipu_request_access(),public.khipu_manage_member(uuid,text),public.khipu_prepare_invitation(text),public.khipu_revoke_invitation(uuid),public.khipu_admin_dashboard() to authenticated;
+grant execute on function public.khipu_invitation_delivery(uuid,boolean) to service_role;
+grant execute on function public.khipu_public_catalog() to anon,authenticated;
+
+-- The automatic RLS event trigger remains installed. Browser roles do not need
+-- EXECUTE on its function. Some local test environments do not have that trigger.
+do $$ begin
+ if to_regprocedure('public.rls_auto_enable()') is not null then
+  execute 'revoke all on function public.rls_auto_enable() from public,anon,authenticated';
+ end if;
+end; $$;
 commit;

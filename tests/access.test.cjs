@@ -24,9 +24,14 @@ test('Phase 1 migrations enforce real PostgreSQL permissions and account transit
  grant select,insert,update,delete on storage.objects to anon,authenticated;
  `);
  for(const [name,id] of Object.entries(ids))await db.query('insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values($1,$2,$3,$4)',[id,name+'@example.test',name==='unverified'?null:new Date().toISOString(),JSON.stringify({full_name:name,role:'admin',status:'active'})]);
- await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261108000100_legacy_baseline.sql'),'utf8'));
+ // The connected project already has this partial schema. Preserve its data.
+ await db.exec("create table public.artesanas_autorizadas(id uuid primary key default gen_random_uuid(),correo text not null unique,nombre text,activa boolean not null default true,creada_en timestamptz not null default now());");
  await db.query("insert into public.artesanas_autorizadas(correo,activa) values('a@example.test',true),('legacysuspended@example.test',false),('legacyinvite@example.test',true)");
- await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261108000200_phase1_access.sql'),'utf8'));
+ const migrationFiles=fs.readdirSync(path.join(root,'supabase/migrations'));
+ const migration=suffix=>fs.readFileSync(path.join(root,'supabase/migrations',migrationFiles.find(file=>file.endsWith(suffix))),'utf8');
+ await db.exec(migration('_legacy_baseline.sql'));
+ assert.equal((await db.query('select count(*)::int n from public.artesanas_autorizadas')).rows[0].n,3);
+ await db.exec(migration('_phase1_access.sql'));
  async function as(user,sql,params=[]){
   await db.exec('reset role');
   await db.query("select set_config('request.jwt.claims',$1,false)",[user?JSON.stringify({sub:ids[user],email:user+'@example.test',role:'authenticated'}):'{}']);
@@ -42,6 +47,12 @@ test('Phase 1 migrations enforce real PostgreSQL permissions and account transit
   await denied(null,'select public.khipu_request_access()');
   await denied(null,'select * from public.khipu_memberships');
   await denied(null,'select public.khipu_admin_dashboard()');
+ });
+ await t.test('public API wrappers never run as definer; private implementations enforce privileges',async()=>{
+  const exposed=await db.query("select proname from pg_proc join pg_namespace n on n.oid=pronamespace where n.nspname='public' and prosecdef");
+  assert.deepEqual(exposed.rows,[]);
+  await denied(null,'select khipu_private.khipu_request_access()');
+  await denied('pending','select khipu_private.khipu_bootstrap_admin($1)',[ids.pending]);
  });
  await t.test('legacy authorization and suspension survive migration',async()=>{
   assert.equal((await rpc('a','khipu_request_access')).status,'active');
@@ -158,5 +169,11 @@ test('Phase 1 migrations enforce real PostgreSQL permissions and account transit
   const prepared=(await db.query("select count(*)::int n from public.khipu_admin_events where action='invitation_prepared' and actor_id=$1",[ids.admin])).rows[0].n;
   for(let i=prepared;i<10;i++)await rpc('admin','khipu_prepare_invitation',['$1'],[`quota${i}@example.test`]);
   await denied('admin',"select public.khipu_prepare_invitation('over-quota@example.test')");
+ });
+ await t.test('hosted smoke script succeeds and rolls back its synthetic accounts',async()=>{
+  const before=(await db.query('select count(*)::int n from auth.users')).rows[0].n;
+  await db.exec(fs.readFileSync(path.join(root,'supabase/tests/phase1_remote_smoke.sql'),'utf8'));
+  const after=(await db.query('select count(*)::int n from auth.users')).rows[0].n;
+  assert.equal(after,before);
  });
 });

@@ -7,7 +7,7 @@
  const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const statusNames={pending:'Pendiente de aprobación',active:'Activa',suspended:'Acceso suspendido',rejected:'Solicitud rechazada'};
  const homeFor=member=>member?.role==='admin'?'admin.html':'panel.html';
- let working=false,completedReset=false;
+ let working=false,completedReset=false,providerSettings=null;
  function message(text,error=false){const box=document.getElementById('accountMessage');box.className=error?'notice account-message':'success account-message';box.textContent=text;box.hidden=false;box.focus();}
  function friendly(error){
   const text=error?.message||'';
@@ -39,7 +39,7 @@
   document.getElementById('accountLogout').onclick=()=>run(async()=>{await cloud.logout();location.replace('acceso.html');});
  }
  function showLogin(){
-  shell(`<span class="eyebrow">Espacio de artesanas</span><h1>Entra a khipuFibra</h1><p>Usa tu cuenta de Google o tu correo. Para gestionar productos necesitas aprobación del equipo.</p><button class="btn alt wide" id="googleLogin">Continuar con Google</button><div class="account-divider">O entra con tu correo</div><form id="loginForm">${emailField()}${passwordFields()}<button class="btn wide" type="submit">Entrar con mi correo</button></form><div class="account-links"><a href="recuperar.html">Olvidé mi contraseña</a><button class="text-button" id="showRegistration">Solicitar una cuenta</button></div>`);
+  shell(`<span class="eyebrow">Espacio de artesanas</span><h1>Entra a khipuFibra</h1><p>Para gestionar productos necesitas aprobación del equipo.</p><button class="btn alt wide" id="googleLogin" ${providerSettings?.google===false?'disabled aria-describedby="googleNotice"':''}>Continuar con Google</button>${providerSettings?.google===false?'<p class="muted small" id="googleNotice">Google aún no está disponible. Por ahora, entra con tu correo.</p>':''}<div class="account-divider">Entra con tu correo</div><form id="loginForm">${emailField()}${passwordFields()}<button class="btn wide" type="submit">Entrar con mi correo</button></form><div class="account-links"><a href="recuperar.html">Olvidé mi contraseña</a><button class="text-button" id="showRegistration">Solicitar una cuenta</button></div>`);
   document.getElementById('googleLogin').onclick=()=>run(()=>cloud.login());
   document.getElementById('loginForm').onsubmit=event=>{event.preventDefault();const values=new FormData(event.currentTarget);run(async()=>{await cloud.loginWithPassword(String(values.get('email')),String(values.get('password')));await start();});};
   document.getElementById('showRegistration').onclick=showRegistration;
@@ -66,7 +66,8 @@
   try{
    // Recovery does not need a membership; an expired link must not create access.
    if(page==='recuperar'){showRecovery();return;}
-   const auth=await cloud.init();
+   const [auth,settings]=await Promise.all([cloud.init(),page==='acceso'&&cloud.authSettings?cloud.authSettings():Promise.resolve(null)]);
+   providerSettings=settings;
    if(page==='restablecer'){showReset(auth);return;}
    if(auth.user){if(auth.membership?.status==='active'){location.replace(homeFor(auth.membership));return;}showStatus(auth);}else showLogin();
   }catch(error){shell('<h1>No pudimos comprobar tu cuenta</h1><p>Revisa tu conexión y vuelve a intentarlo. Si el problema continúa, contacta a khipuFibra.</p><button class="btn" id="retryAccess">Volver a intentar</button><a class="btn alt" href="catalogo.html">Ver catálogo</a>');document.getElementById('retryAccess').onclick=start;}

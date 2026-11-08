@@ -1,7 +1,10 @@
 # Fase 1 — roles y autenticación
 
-Implementación local del 8 de noviembre de 2026, en `develop/khipufibra-fase-1`.
-No se aplicaron migraciones remotas, no se crearon cuentas reales, no se enviaron correos reales y no se desplegó en Vercel.
+Implementación del 8 de noviembre de 2026, en `develop/khipufibra-fase-1`.
+
+Las dos migraciones se aplicaron al proyecto existente con aprobación explícita del titular. Se conservaron las dos filas originales y se verificaron los permisos en el servidor y la API pública. El frontend incluye únicamente URL y clave pública, y el SDK está fijado en `2.119.0`. No se crearon cuentas permanentes ni se enviaron correos reales durante las pruebas.
+
+La rama utiliza Vercel Preview; no se ha mezclado con `main` ni promovido a producción. La configuración de URLs de Auth, el registro de la primera cuenta administradora y Google siguen pendientes. Consulta [el estado y los pasos actuales](APLICACION_FASE_1.md).
 
 ## Qué incluye
 
@@ -24,7 +27,7 @@ Los borradores ya existentes en el antiguo almacenamiento compartido de demostra
 | Integración existente | `assets/cloud.js`, `assets/app.js`, `acceso.html` |
 | Nuevas pantallas | `recuperar.html`, `restablecer.html`, `admin.html` |
 | Interfaz de acceso | `assets/auth-ui.js`, `assets/admin.js`, `assets/access.css` |
-| Base de datos | `supabase/migrations/20261108000100_legacy_baseline.sql`, `20261108000200_phase1_access.sql` |
+| Base de datos | `supabase/migrations/20261108173320_legacy_baseline.sql`, `20261108173327_phase1_access.sql` |
 | Servidor | `supabase/functions/admin-invite/index.ts`, `supabase/config.toml` |
 | Build y verificaciones | `package.json`, `package-lock.json`, `scripts/`, `tests/`, `.github/workflows/checks.yml`, `vercel.json` |
 | Configuración y guía | `.gitignore`, `.env.example`, `README.md`, `LEEME_PRIMERO.md`, este documento |
@@ -55,12 +58,12 @@ Revisa también triggers, funciones, restricciones, valores predeterminados y bu
 
 ## 2. Aplicar las migraciones únicamente al entorno elegido
 
-**Proyecto nuevo y vacío:** aplicar primero `20261108000100_legacy_baseline.sql` y luego `20261108000200_phase1_access.sql`. Puede hacerse desde SQL Editor, cada archivo completo, o con la CLI una vez enlazada al proyecto de prueba.
+**Proyecto nuevo y vacío:** aplicar primero `20261108173320_legacy_baseline.sql` y luego `20261108173327_phase1_access.sql`. El proyecto conectado ya tiene ambas migraciones registradas: no volver a ejecutarlas allí. Para futuros proyectos, usar un único método de migración y comprobar la versión de la CLI antes de ejecutar comandos.
 
-**Proyecto existente:** la línea base reproduce el esquema legado. No volver a ejecutarla sobre tablas/políticas existentes. Solo después de demostrar su equivalencia, si se usará la CLI, registrar esa línea base como ya aplicada:
+**Proyecto existente completo:** la línea base reproduce el esquema legado. No volver a ejecutarla sobre tablas/políticas existentes. Solo después de demostrar su equivalencia, si se usará la CLI, registrar esa línea base como ya aplicada:
 
 ```text
-supabase migration repair 20261108000100 --status applied
+supabase migration repair 20261108173320 --status applied
 supabase migration list
 supabase db push --dry-run
 ```
@@ -68,6 +71,8 @@ supabase db push --dry-run
 Estos comandos se ejecutan desde este repositorio, con la CLI instalada y enlazada explícitamente al proyecto de prueba. `migration repair` cambia el historial remoto: no es una comprobación de esquema. Revisa el plan antes de `supabase db push`.
 
 Si trabajas con SQL Editor, ejecuta únicamente la migración de Fase 1 después de verificar la línea base y documenta el historial aplicado. No mezcles métodos sin reconciliar el historial.
+
+**Proyecto parcial verificado:** el proyecto conectado contiene solo `artesanas_autorizadas`. No equivale a una línea base completa y no se debe marcar toda la línea base como aplicada. El plan específico para conservar esa tabla y crear lo que falta está en [APLICACION_FASE_1.md](APLICACION_FASE_1.md).
 
 La migración de Fase 1 es transaccional. Sustituye todas las políticas existentes de `artesanas_perfiles` y `productos`, preserva las filas y añade guardas restrictivas a Storage. Esta sustitución requiere revisar posibles reglas personalizadas antes de aplicar. Las tablas nuevas no se vuelven a crear en ejecuciones repetidas: usa el historial de migraciones.
 
@@ -158,7 +163,7 @@ En PowerShell con bloqueo de `npm.ps1`, usar `npm.cmd` en su lugar. El preview e
 
 Las pruebas SQL ejecutan las migraciones sin modificar sobre PostgreSQL embebido (PGlite), con contratos mínimos de `auth.users`, JWT y Storage. Comprueban roles reales de PostgreSQL y RLS. Las pruebas de formularios usan DOM simulado; las de la Edge Function simulan Auth y el proveedor de correo. No equivalen a una prueba alojada de Supabase Auth, envío real de correo, Deno o navegador móvil.
 
-Resultado local: **42 comprobaciones aprobadas**, sintaxis y referencias HTML correctas y build estático generado. El host de acceso al navegador automatizado no está disponible; no se completó la revisión visual. No se ejecutó `deno check` ni se desplegó la Edge Function.
+Resultado actualizado: **45 comprobaciones locales aprobadas**, sintaxis y referencias HTML correctas y build con Supabase configurado. Además, pasaron 10 escenarios de permisos en Supabase, con todos sus datos temporales revertidos, y 4 comprobaciones HTTP con la clave pública: catálogo accesible, lista de correos y membresías protegidas y administración bloqueada sin sesión. El host de acceso al navegador automatizado no está disponible; no se completó la revisión visual. No se ejecutó `deno check` ni se desplegó la Edge Function.
 
 ## 8. Prueba de aceptación en Preview
 
@@ -177,13 +182,13 @@ Usar ventanas o perfiles de navegador separados para administrador, artesana A y
 
 ## Pendientes y límites
 
-- No hay configuración ni pruebas remotas realizadas. Google, SMTP, Auth, Deno, Vercel Preview y dispositivos reales requieren completar los pasos anteriores.
+- El esquema y los permisos remotos están verificados. Google, SMTP, confirmación/recuperación por correo real, Deno, invitaciones y dispositivos reales requieren completar los pasos anteriores.
 - No se midieron layout, accesibilidad ni rendimiento en navegador real. Las verificaciones DOM no miden esos aspectos.
 - Los buckets existentes siguen siendo públicos: suspender/ocultar no revoca una URL de imagen previamente conocida. Los borradores con medios privados se resolverán en Fase 2.
 - Permanecen los datos ficticios del catálogo; deben señalarse o sustituirse antes del piloto público.
 - El panel limita su lista a 200 cuentas, 100 invitaciones y 100 eventos recientes; la paginación queda pendiente para mayor volumen.
 - La lista de correos registra una instantánea de la identidad. Cambios de correo, eliminación de cuentas y transferencia de administración requieren procedimientos posteriores.
-- El SDK de Supabase continúa con `@2`, como en el proyecto anterior; fijar y validar una versión exacta es una mejora pendiente.
+- El SDK del navegador y los imports de las dos funciones están fijados en `2.119.0`. La función de IA no se desplegó y sigue pendiente de cuotas en Fase 4.
 - Productos avanzados, dictado, cuotas IA, Meta, pagos y moderación de contenido corresponden a las siguientes fases.
 
 ## Referencias oficiales revisadas

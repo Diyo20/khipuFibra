@@ -1,5 +1,6 @@
--- Legacy baseline for a FRESH database only. Existing projects must compare their schema
--- and mark this baseline as applied; see docs/FASE_1.md. Never replay blindly.
+-- Legacy baseline for a fresh database or a verified partial legacy schema.
+-- Existing artesanas_autorizadas rows are preserved. Compare schema and back up first.
+-- Do not replay on a complete legacy installation; see docs/FASE_1.md.
 begin;
 -- khipuFibra: ejecutar en SQL Editor del proyecto existente.
 -- No elimina la tabla public.artesanas_autorizadas ya creada.
