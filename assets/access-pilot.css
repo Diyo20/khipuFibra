@@ -1,0 +1,82 @@
+/* Primera pantalla de la identidad aprobada: Materia, oficio y creadoras.
+   Solo se aplica a acceso.html; las demás páginas conservan su sistema actual. */
+.access-pilot{
+ --bg:#F7F3EB;--paper:#FCFAF6;--ink:#29251F;--muted:#514A41;
+ --green:#8C402C;--green2:#8C402C;--line:#D8CFC2;--soft:#EEE7DC;
+ --p-action:#8C402C;--action:#8C402C;--m-ease:cubic-bezier(.2,.8,.2,1);
+ background:var(--bg);font-size:16px;line-height:1.6;min-height:100svh;
+ display:flex;flex-direction:column;
+}
+.access-pilot .container{width:min(1200px,calc(100% - 96px))}
+.access-pilot .account-header{min-height:112px;padding:24px 0;border-bottom:1px solid var(--line)}
+.access-pilot .account-brand{display:flex;gap:8px;color:var(--ink);font-size:28px;line-height:1.2;letter-spacing:-.6px}
+.access-pilot .account-brand .access-header-logo{display:none}
+.access-pilot .account-brand small{display:block;margin-top:8px;font:400 14px/1.3 'DM Sans',sans-serif;letter-spacing:0;color:var(--muted)}
+.access-pilot .account-header>a:last-child{gap:16px;color:var(--ink);font-size:15px;text-decoration:none}
+.access-pilot .access-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:96px;align-items:center;flex:1;padding:64px 0}
+.access-story{max-width:480px}
+.access-story>img{width:216px;height:216px;object-fit:contain;margin-bottom:32px}
+.access-story .access-statement{font:600 clamp(30px,2.65vw,40px)/1.2 'Fraunces',Georgia,serif;letter-spacing:-1px;margin-bottom:24px;color:var(--ink)}
+.access-story>p:not(.access-statement){max-width:390px;margin-bottom:24px;color:var(--muted)}
+.access-story .link{display:inline-flex;align-items:center;gap:16px;min-height:44px;font-size:15px}
+.access-pilot .account-main{width:100%;max-width:440px;justify-self:end;margin:0;padding:0;background:none;border:0;box-shadow:none;border-radius:0;min-width:0}
+.access-pilot .account-main h1{font:600 clamp(30px,2.8vw,40px)/1.2 'Fraunces',Georgia,serif;letter-spacing:-1px;margin:12px 0 16px}
+.access-pilot .account-main>div>p:first-of-type{color:var(--muted);margin-bottom:24px}
+.access-pilot .eyebrow{font-size:14px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--green)}
+.access-pilot .field{margin:0 0 20px}
+.access-pilot .field label{font-size:15px;font-weight:500;margin-bottom:8px}
+.access-pilot .input{min-height:52px;border-radius:8px;border-color:#938676;background:var(--paper);font-size:16px;padding:12px 16px}
+.access-pilot .input:focus{border-color:var(--green);box-shadow:0 0 0 3px #8C402C1A}
+.access-pilot .btn{min-height:52px;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:600;background:var(--green);color:var(--bg)}
+.access-pilot .btn.alt{border-color:var(--line);color:var(--ink);background:transparent}
+.access-pilot .btn.alt:hover{background:var(--soft)}
+.access-pilot .btn:disabled{opacity:1;color:var(--muted);background:var(--soft);border-color:var(--line);cursor:not-allowed}
+.access-pilot .btn:disabled:hover{transform:none}
+.access-pilot .account-divider{margin:24px 0;font-size:14px}
+.access-pilot .account-links{flex-direction:row;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap}
+.access-pilot .account-links a,.access-pilot .text-button{font-size:14px;font-weight:500;color:var(--green)}
+.access-pilot .small{font-size:14px}
+.access-pilot #googleNotice{margin:8px 0 0}
+.access-pilot .notice,.access-pilot .success{background:var(--soft);color:var(--ink);border:1px solid var(--line);border-left:3px solid var(--green);border-radius:4px;font-size:15px}
+.access-pilot .account-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 0;border-top:1px solid var(--line);margin:0 auto;font-size:14px;text-align:left}
+.access-pilot .account-footer>a{display:inline-flex;align-items:center;min-height:44px}
+.access-pilot .skip-link{background:var(--bg);color:var(--green)}
+.access-pilot :focus-visible{outline:2px solid var(--green);outline-offset:4px}
+.access-pilot .link{color:var(--ink);text-underline-offset:5px;text-decoration-thickness:1px}
+.access-pilot .link:hover,.access-pilot .link:focus-visible{text-decoration:underline}
+@media(max-width:1023px){
+ .access-pilot .container{width:calc(100% - 64px)}
+ .access-pilot .access-layout{gap:48px;padding:48px 0}
+ .access-story>img{width:176px;height:176px}
+ .access-story .access-statement{font-size:30px}
+ .access-pilot .account-links{flex-direction:column;gap:4px}
+}
+@media(max-width:767px){
+ .access-pilot .container{width:calc(100% - 40px)}
+ .access-pilot .account-header{min-height:96px;padding:20px 0;gap:16px}
+ .access-pilot .account-brand{font-size:22px}
+ .access-pilot .account-brand .access-header-logo{display:block;width:64px;height:64px;object-fit:contain}
+ .access-pilot .account-brand small{font-size:13px;margin-top:4px}
+ .access-pilot .account-header>a:last-child{font-size:14px;gap:8px;max-width:110px;line-height:1.4}
+ .access-pilot .access-layout{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:24px 0 40px;max-width:480px}
+ .access-story{display:none}
+ .access-story>img{width:112px;height:112px;margin:0 auto 16px}
+ .access-story .access-statement{font-size:24px;letter-spacing:-.4px;text-align:center;margin:0}
+ .access-story .access-statement br{display:none}
+ .access-story>p:not(.access-statement),.access-story>.link{display:none}
+ .access-pilot .account-main{max-width:none}
+ .access-pilot .account-main h1{font-size:32px;margin:8px 0 12px}
+ .access-pilot .account-main>div>p:first-of-type{margin-bottom:20px}
+ .access-pilot .account-links{flex-direction:row;gap:4px 12px}
+ .access-pilot .account-footer{padding:16px 0;flex-wrap:wrap;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.access-pilot *{scroll-behavior:auto}}
+@media(max-width:359px){
+ .access-pilot .container{width:calc(100% - 32px)}
+ .access-pilot .account-header{gap:12px}
+ .access-pilot .account-brand{font-size:20px}
+ .access-pilot .account-brand .access-header-logo{width:52px;height:52px;flex-shrink:0}
+ .access-pilot .account-brand small{font-size:13px}
+ .access-pilot .account-header>a:last-child{font-size:13px;max-width:none;white-space:nowrap}
+ .access-pilot .account-main h1{font-size:30px}
+}

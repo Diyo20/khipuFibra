@@ -1,5 +1,9 @@
 # khipuFibra — plataforma web de artesanías
 
+## Incremento actual: cuenta y primera pantalla visual
+
+Mi perfil y Administración incorporan cambio de contraseña de la propia cuenta, reautenticación cuando Auth lo exige y orientación para identidades exclusivamente de Google. La nueva paleta marfil, carbón y terracota se aplica como piloto únicamente a `acceso.html`. Consulta [la auditoría e instrucciones de prueba](docs/INCREMENTO_2_2026-11-08.md). Los correos reales y Google requieren las comprobaciones manuales indicadas allí; no se da por terminada la plataforma 2.0 completa.
+
 ## Fase 1: roles y autenticación
 
 La rama de desarrollo incorpora acceso con Google y correo, recuperación de contraseña, aprobación de cuentas, suspensión, invitaciones e historial administrativo. Las migraciones están aplicadas y los permisos fueron comprobados en el Supabase existente. La primera cuenta administradora está activa y el titular confirmó el acceso al panel. `admin-invite` está desplegada y rechaza solicitudes sin autorización; su envío real sigue pendiente de prueba. La vista previa utiliza la configuración pública de Supabase. Google OAuth y la recuperación real continúan pendientes; Google aparece deshabilitado mientras no esté disponible en Supabase.

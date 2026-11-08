@@ -13,9 +13,11 @@ test('frontend build excludes internals and refuses private API credentials',t=>
  fs.writeFileSync(path.join(temporary,'index.html'),'<h1>khipuFibra</h1>');
  fs.writeFileSync(path.join(temporary,'assets/supabase-config.js'),"window.KHIPU_CONFIG={supabaseUrl:'',supabasePublishableKey:''};");
  fs.writeFileSync(path.join(temporary,'private.sql'),'never publish');
+ fs.mkdirSync(path.join(temporary,'assets/motion'));fs.writeFileSync(path.join(temporary,'assets/motion/motion.css'),'/* unchanged kit stylesheet */');
  const build=key=>spawnSync(process.execPath,[path.join(temporary,'scripts/build.cjs')],{encoding:'utf8',env:{...process.env,SUPABASE_URL:'https://project.example',SUPABASE_PUBLISHABLE_KEY:key}});
  const good=build('sb_publishable_public_example');assert.equal(good.status,0,good.stderr);
  assert.deepEqual(fs.readdirSync(path.join(temporary,'dist')).sort(),['assets','index.html']);
+ assert.ok(fs.existsSync(path.join(temporary,'dist/assets/motion/motion.css')));
  for(const key of ['sb_secret_do_not_publish','eyJ.'+Buffer.from(JSON.stringify({role:'service_role'})).toString('base64url')+'.signature']){
   const refused=build(key);assert.notEqual(refused.status,0);assert.equal(refused.stderr.includes(key),false);
  }

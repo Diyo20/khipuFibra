@@ -27,7 +27,7 @@ La consulta del Supabase conectado confirmó:
 | Invitaciones | Código y función desplegados; envío/recepción/aceptación por correo real todavía requieren prueba con destinataria acordada |
 | Recuperación y establecimiento de contraseña | Implementados; pruebas automatizadas; correo real y redirección del proveedor pendientes de comprobación de extremo a extremo |
 | Cambio de contraseña dentro de Mi perfil y administrador | Añadido en este incremento |
-| Google | El código está preparado; proveedor y recorrido OAuth requieren configuración y prueba |
+| Google | Código preparado; consulta pública actual: proveedor deshabilitado. Requiere configuración y prueba |
 | Aislamiento por propietaria y suspensión | Pruebas locales PostgreSQL y smoke remoto con rollback satisfactorios |
 
 ## Cambios realizados
@@ -63,6 +63,8 @@ Las identidades solo deciden la presentación de métodos de acceso; los permiso
 ## Pendientes manuales y fases posteriores
 
 Confirmar SMTP/cuotas, URLs exactas de Preview y recuperación, mínimo remoto de contraseña y reautenticación. Configurar y probar Google. Security Advisor: [protección de contraseñas filtradas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection), disponible según el plan de Supabase. No se solicita cambiar de plan ni se activa automáticamente.
+
+La configuración pública de Auth se volvió a consultar en esta sesión: Email habilitado, Google deshabilitado, registro habilitado y confirmación de correo requerida. Las URLs permitidas de redirección y las credenciales SMTP no son verificables mediante ese endpoint.
 
 No están implementados por este incremento la administración completa de productos/planes/pagos, motivos administrativos adicionales, micrófono, cuotas e IA de imágenes, conexiones Meta, Yape ni métricas nuevas. Se respetará el orden de fases del documento de khipuFibra 2.0. No se publicará en producción ni se fusionará con `main` sin autorización.
 

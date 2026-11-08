@@ -8,7 +8,7 @@ const server=http.createServer(async(req,res)=>{
   const requested=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
   const relative=requested==='/'?'index.html':requested.slice(1);
   // Preview only serves frontend assets; never Git, SQL, env, tests or dependencies.
-  if(!/^(?:[a-z-]+\.html|assets\/[a-z0-9-]+\.(?:css|js|png|svg))$/.test(relative)){res.writeHead(404);res.end('Not found');return;}
+  if(!/^(?:[a-z-]+\.html|assets\/[a-z0-9-]+\.(?:css|js|png|svg)|assets\/motion\/motion\.(?:css|js))$/.test(relative)){res.writeHead(404);res.end('Not found');return;}
   const file=path.resolve(base,relative);
   if(!file.startsWith(base+path.sep)){res.writeHead(403);res.end();return;}
   const bytes=await fs.readFile(file);res.writeHead(200,{'Content-Type':types[path.extname(file)],'Cache-Control':'no-store'});res.end(bytes);

@@ -1,31 +1,46 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-type="product" data-radius="soft" data-buttons="solid" data-motion>
 <head>
  <meta charset="utf-8">
  <meta name="viewport" content="width=device-width,initial-scale=1">
- <meta name="theme-color" content="#f8f5ee">
+ <meta name="theme-color" content="#F7F3EB">
+ <meta name="page-type" content="product">
+ <meta name="site-kind" content="other">
  <meta name="robots" content="noindex,nofollow">
  <meta name="description" content="Acceso a las cuentas de artesanas y administración de khipuFibra.">
  <meta name="referrer" content="strict-origin-when-cross-origin">
  <title>Entrar a mi cuenta · khipuFibra</title>
- <link rel="icon" href="assets/logo.png" type="image/png">
+ <link rel="icon" href="assets/logo-web.png" type="image/png">
  <link rel="stylesheet" href="assets/styles.css">
  <link rel="stylesheet" href="assets/access.css">
+ <link rel="stylesheet" href="assets/access-pilot.css">
+ <link rel="stylesheet" href="assets/motion/motion.css">
+ <script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
 </head>
-<body data-page="acceso">
+<body data-page="acceso" class="access-pilot">
+ <!-- Piloto visual: paleta y tipografías del brief. Acceso funcional, sin fotografías ajenas ni secciones comerciales añadidas. -->
  <a class="skip-link" href="#accountContent">Saltar al contenido</a>
  <header class="container account-header">
-  <a class="account-brand" href="index.html"><img src="assets/logo.png" alt="" width="52" height="52">khipuFibra</a>
-  <a href="catalogo.html">Ver catálogo</a>
+  <a class="account-brand" href="index.html"><img class="access-header-logo" src="assets/logo-web.png" width="64" height="64" alt=""><span class="account-wordmark">khipuFibra<small>Artesanía peruana</small></span></a>
+  <a class="link" href="catalogo.html">Ver catálogo <span aria-hidden="true">↗</span></a>
  </header>
- <main class="container account-main panel" id="accountContent" tabindex="-1">
-  <p role="status">Comprobando el acceso…</p>
+ <main class="container access-layout" id="accessMain">
+  <aside class="access-story" aria-label="El espacio de las artesanas">
+   <img src="assets/logo-web.png" alt="Logotipo original de KhipuFibra" width="216" height="216" fetchpriority="high">
+   <p class="access-statement">Tu catálogo y tus redes, <br>en un mismo espacio.</p>
+   <p>Presenta tus piezas, cuenta su historia y prepara tus publicaciones. Tú decides qué compartir.</p>
+   <a class="link" href="artesanas.html">Conoce a las artesanas <span aria-hidden="true">→</span></a>
+  </aside>
+  <section class="account-main" id="accountContent" tabindex="-1" aria-label="Acceso a mi cuenta">
+   <p role="status">Comprobando el acceso…</p>
+  </section>
  </main>
  <noscript><p class="container notice">Activa JavaScript para iniciar sesión. Nunca compartas tu contraseña con otras personas.</p></noscript>
- <footer class="account-footer">khipuFibra · Artesanía peruana</footer>
+ <footer class="container account-footer"><span>khipuFibra · Hecho a mano en Perú</span><a class="link" href="index.html">Volver al inicio</a></footer>
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js" defer></script>
  <script src="assets/supabase-config.js" defer></script>
  <script src="assets/cloud.js" defer></script>
  <script src="assets/auth-ui.js" defer></script>
+ <script src="assets/motion/motion.js" type="module"></script>
 </body>
 </html>

@@ -24,5 +24,10 @@ fs.mkdirSync(destination,{recursive:true});
 for(const file of fs.readdirSync(root).filter(file=>file.endsWith('.html')))fs.copyFileSync(path.join(root,file),path.join(destination,file));
 fs.mkdirSync(path.join(destination,'assets'),{recursive:true});
 for(const file of fs.readdirSync(path.join(root,'assets')).filter(file=>/\.(?:js|css|png|svg)$/.test(file)))fs.copyFileSync(path.join(root,'assets',file),path.join(destination,'assets',file));
+// The visual pilot loads the skill's unchanged motion layer from its own folder.
+for(const file of ['motion.css','motion.js']){
+ const source=path.join(root,'assets/motion',file);
+ if(fs.existsSync(source)){fs.mkdirSync(path.join(destination,'assets/motion'),{recursive:true});fs.copyFileSync(source,path.join(destination,'assets/motion',file));}
+}
 fs.writeFileSync(path.join(destination,'assets/supabase-config.js'),'// Public configuration generated for this deployment.\nwindow.KHIPU_CONFIG = '+JSON.stringify(config,null,2)+';\n');
 console.log('Static frontend built in dist/. Supabase access: '+(config.supabaseUrl?'configured':'not configured'));

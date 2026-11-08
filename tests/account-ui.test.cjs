@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {parseHTML}=require('linkedom');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-async function setup(page,auth,{enabled=true,google=null}={}){
+async function setup(page,auth,{enabled=true,google=null,authLinkError=false}={}){
  const html=fs.readFileSync(path.join(__dirname,'..',page+'.html'),'utf8');
  const {document,HTMLInputElement,HTMLFormElement}=parseHTML(html);
  HTMLInputElement.prototype.setCustomValidity=function(message){this.validationMessage=message;};
@@ -15,7 +15,7 @@ async function setup(page,auth,{enabled=true,google=null}={}){
  let current=auth;
  const window={addEventListener:(type,fn)=>{listeners[type]=fn;}};
  const location={href:'https://preview.example/'+page+'.html',replace:url=>calls.push(['redirect',url])};
- const cloud={enabled,init:async()=>current,authSettings:async()=>google===null?null:{google},login:async()=>calls.push(['google']),loginWithPassword:async(email,password)=>calls.push(['password',email,password]),requestAccount:async(...values)=>calls.push(['signup',...values]),recoverPassword:async email=>calls.push(['recover',email]),updatePassword:async password=>calls.push(['update',password]),logout:async()=>{calls.push(['logout']);setImmediate(()=>listeners['khipu:auth-change']?.({detail:{event:'SIGNED_OUT'}}));}};
+ const cloud={enabled,authLinkError,init:async()=>current,authSettings:async()=>google===null?null:{google},login:async()=>calls.push(['google']),loginWithPassword:async(email,password)=>calls.push(['password',email,password]),requestAccount:async(...values)=>calls.push(['signup',...values]),recoverPassword:async email=>calls.push(['recover',email]),updatePassword:async password=>calls.push(['update',password]),logout:async()=>{calls.push(['logout']);setImmediate(()=>listeners['khipu:auth-change']?.({detail:{event:'SIGNED_OUT'}}));}};
  window.khipuCloud=cloud;
  class FormData {constructor(form){this.values=new Map([...form.querySelectorAll('input')].map(input=>[input.name,input.value]));}get(key){return this.values.get(key)??null;}}
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/auth-ui.js'),'utf8'),{window,document,location,FormData,console});
@@ -78,6 +78,6 @@ test('rapid login clicks only send one request',async()=>{
 
 test('a reset link error is not bypassed by an existing session; Google-only users get no password form',async()=>{
  const context=await setup('restablecer',{user:{id:'a',identities:[{provider:'google'}]}});assert.equal(context.document.getElementById('resetForm'),null);assert.match(context.document.querySelector('main').textContent,/Google/);
- const other=await setup('restablecer',anonymous);other.cloud.authLinkError=true;
- other.emit({detail:{event:'SIGNED_OUT'}});assert.equal(other.document.getElementById('resetForm'),null);assert.match(other.document.querySelector('h1').textContent,/ya no/);
+ const other=await setup('restablecer',{user:{id:'a',identities:[{provider:'email'}]}},{authLinkError:true});
+ assert.equal(other.document.getElementById('resetForm'),null);assert.match(other.document.querySelector('h1').textContent,/ya no/);
 });
