@@ -43,3 +43,16 @@ test('invitation errors show the server explanation without claiming a sent emai
  api.functions.invoke=async()=>({error:{message:'Network error'}});
  await assert.rejects(cloud.inviteArtisan('ana@example.test'),/No se pudo enviar/);
 });
+
+test('password updates validate length, preserve Auth codes and use SDK currentPassword and nonce',async()=>{
+ const {cloud,api,calls}=setup();await assert.rejects(cloud.updatePassword('short'),/12/);assert.equal(calls.length,0);
+ await cloud.updatePassword('a new long password',{currentPassword:'old password',nonce:'123456'});
+ assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),['updateUser',{password:'a new long password',currentPassword:'old password',nonce:'123456'}]);
+ api.auth.updateUser=async()=>({error:{message:'Reauthentication needed',code:'reauthentication_needed'}});
+ await assert.rejects(cloud.updatePassword('a new long password'),error=>error.code==='reauthentication_needed');
+});
+test('security methods use verified user identities and Auth reauthentication',async()=>{
+ const {cloud,api}=setup();api.auth.getUser=async()=>({data:{user:{id:'a',email:'ana@example.test',identities:[{provider:'google'}]}},error:null});
+ assert.deepEqual(JSON.parse(JSON.stringify(await cloud.accountSecurity())),{userId:'a',email:'ana@example.test',passwordIdentity:false,googleIdentity:true});
+ let sent=false;api.auth.reauthenticate=async()=>{sent=true;return {error:null};};await cloud.reauthenticate();assert.equal(sent,true);
+});

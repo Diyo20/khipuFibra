@@ -75,3 +75,9 @@ test('rapid login clicks only send one request',async()=>{
  const {document,cloud}=await setup('acceso',anonymous);let count=0,release;cloud.loginWithPassword=()=>{count++;return new Promise(resolve=>{release=resolve;});};
  const form=document.getElementById('loginForm');const event={preventDefault(){},currentTarget:form};form.onsubmit(event);form.onsubmit(event);assert.equal(count,1);release();await tick();
 });
+
+test('a reset link error is not bypassed by an existing session; Google-only users get no password form',async()=>{
+ const context=await setup('restablecer',{user:{id:'a',identities:[{provider:'google'}]}});assert.equal(context.document.getElementById('resetForm'),null);assert.match(context.document.querySelector('main').textContent,/Google/);
+ const other=await setup('restablecer',anonymous);other.cloud.authLinkError=true;
+ other.emit({detail:{event:'SIGNED_OUT'}});assert.equal(other.document.getElementById('resetForm'),null);assert.match(other.document.querySelector('h1').textContent,/ya no/);
+});

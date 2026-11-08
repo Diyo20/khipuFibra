@@ -4,6 +4,7 @@ const cfg=window.KHIPU_CONFIG||{};
 const enabled=!!(cfg.supabaseUrl && cfg.supabasePublishableKey);
 const api=enabled && window.supabase ? window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 let currentUser=null,approved=false,membership=null;
+const authLinkError=['error','error_code'].some(key=>new URLSearchParams(location.hash.slice(1)).has(key)||new URLSearchParams(location.search||'').has(key));
 let recovery= new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery';
 if(api)api.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY')recovery=true;
@@ -19,7 +20,7 @@ function clearPrivate(){
   localStorage.removeItem('quipufibra_mockup_v1');
  }catch{/* Storage may be unavailable; never prevent Auth from signing out. */}
 }
-const fail=e=>{if(e)throw Error(e.message||String(e));};
+const fail=e=>{if(e){const error=Error(e.message||String(e));error.code=e.code;throw error;}};
 const profileShape=(p)=>({name:p.name,city:p.city||'',specialty:p.specialty||'',bio:p.bio||'',story:p.story||'',experience:p.experience||'',fair:p.fair||'',facebook:p.facebook||'',instagram:p.instagram||'',tiktok:p.tiktok||'',youtube:p.youtube||'',video:p.video||'',whatsapp:p.whatsapp||'',avatar:p.avatar_url||'🧶',owner_id:p.user_id});
 const mapProduct=(p)=>({id:p.id,name:p.name,category:p.category,material:p.material,price:p.price??'Consultar',img:p.image_url||'assets/bolso.svg',story:p.story||'',dimensions:p.dimensions||'',care:p.care||'',stock:p.stock||'',artisan:p.artesanas_perfiles?.name||'Artesana',owner_id:p.owner_id,collection:p.collection||'',time:'Consultar'});
 const self=()=>{if(!approved||!currentUser)throw Error('No tienes autorización para gestionar artesanías.');};
@@ -48,11 +49,13 @@ async function authSettings(){if(!enabled)return null;try{const r=await fetch(ne
 async function loginWithPassword(email,password){requireApi();const r=await api.auth.signInWithPassword({email:email.trim(),password});fail(r.error);return r.data;}
 async function requestAccount(email,password,name){requireApi();const r=await api.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:new URL('acceso.html',location.href).href,data:{full_name:name.trim()}}});fail(r.error);return r.data;}
 async function recoverPassword(email){requireApi();const r=await api.auth.resetPasswordForEmail(email.trim(),{redirectTo:new URL('restablecer.html',location.href).href});fail(r.error);}
-async function updatePassword(password){requireApi();const r=await api.auth.updateUser({password});fail(r.error);}
+async function updatePassword(password,{currentPassword,nonce}={}){requireApi();if(typeof password!=='string'||password.length<12)throw Error('Usa una contraseña de al menos 12 caracteres.');const fields={password};if(currentPassword)fields.currentPassword=currentPassword;if(nonce)fields.nonce=nonce;const r=await api.auth.updateUser(fields);fail(r.error);}
+async function reauthenticate(){requireApi();const r=await api.auth.reauthenticate();fail(r.error);}
+async function accountSecurity(){requireApi();const r=await api.auth.getUser();fail(r.error);if(!r.data?.user)throw Error('Tu sesión venció. Vuelve a entrar.');const user=r.data.user;return {userId:user.id,email:user.email||'',passwordIdentity:(user.identities||[]).some(identity=>identity.provider==='email'),googleIdentity:(user.identities||[]).some(identity=>identity.provider==='google')};}
 async function logout(){requireApi();const {error}=await api.auth.signOut();fail(error);currentUser=null;approved=false;membership=null;clearPrivate();}
 async function adminData(){requireApi();const r=await api.rpc('khipu_admin_dashboard');fail(r.error);return r.data;}
 async function manageMember(userId,action){requireApi();const r=await api.rpc('khipu_manage_member',{target_user:userId,action});fail(r.error);return r.data;}
 async function inviteArtisan(email){requireApi();const r=await api.functions.invoke('admin-invite',{body:{email:email.trim()}});if(r.error){let detail;try{detail=await r.error.context?.json();}catch{}throw Error(detail?.error||'No se pudo enviar la invitación. Revisa tu conexión o vuelve a entrar a tu cuenta.');}if(r.data?.error)throw Error(r.data.error);return r.data;}
 async function revokeInvitation(invitationId){requireApi();const r=await api.rpc('khipu_revoke_invitation',{invitation_id:invitationId});fail(r.error);}
-window.khipuCloud={enabled,init,list,myProfile,saveProfile,uploadAvatar,saveProduct,sendReview,generateDescription,login,loginWithPassword,requestAccount,recoverPassword,updatePassword,authSettings,logout,clearPrivate,adminData,manageMember,inviteArtisan,revokeInvitation,get approved(){return approved},get membership(){return membership},get user(){return currentUser},get client(){return api}};
+window.khipuCloud={enabled,authLinkError,init,list,myProfile,saveProfile,uploadAvatar,saveProduct,sendReview,generateDescription,login,loginWithPassword,requestAccount,recoverPassword,updatePassword,reauthenticate,accountSecurity,authSettings,logout,clearPrivate,adminData,manageMember,inviteArtisan,revokeInvitation,get approved(){return approved},get membership(){return membership},get user(){return currentUser},get client(){return api}};
 })();
