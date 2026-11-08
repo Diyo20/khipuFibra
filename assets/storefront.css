@@ -106,3 +106,5 @@ body[data-page=index] .store-hero .hero-wrap{padding-top:calc(var(--site-header)
 @media(max-width:599px){body[data-page=index] .store-hero .hero-wrap{padding-top:calc(var(--site-header) + 28px)}.hero-fact{margin-top:12px}}
 @media(max-width:359px){body[data-page=index] .editorial-head h2,body[data-page=index] .home-makers h2,body[data-page=index] .home-join h2{font-size:28px}}
 .product-gallery>.example-label{position:static;display:inline-flex;margin-bottom:12px}
+
+.store-hero h1 .hero-accent{color:var(--accent)}

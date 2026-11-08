@@ -44,6 +44,19 @@ test('product uses its actual heading, complete WhatsApp link, labeled demo cont
 test('unknown product IDs never display another product as the requested one',async()=>{
  const {document}=await setup('producto',{search:'?id=missing'});assert.match(document.querySelector('h1').textContent,/No encontramos/);assert.equal(document.querySelector('a[href^="https://wa.me/"]'),null);
 });
+
+test('real products without registered contact never use the demonstration WhatsApp number',async()=>{
+ const p={id:'real',name:'Producto real',price:20,category:'Bolsos',material:'Algodón',artisan:'Artesana real',img:'https://example.test/front.jpg'};
+ const {document}=await setup('producto',{products:[p],search:'?id=real'});
+ assert.equal(document.querySelector('a[href^="https://wa.me/"]'),null);
+ assert.match(document.querySelector('.product-actions .btn').textContent,/Ver perfil de la artesana/);
+});
+
+test('unknown artisan profile never displays a demonstration identity',async()=>{
+ const {document}=await setup('artesana',{search:'?nombre=missing'});
+ assert.match(document.querySelector('h1').textContent,/No encontramos/);
+ assert.equal(document.querySelector('.profilecover'),null);
+});
 test('prices to consult sort last and a real product image gallery does not invent images',async()=>{
  const p={id:'real',name:'Pieza real',price:null,category:'Bolsos',material:'Algodón',artisan:'Artesana',img:'https://example.test/front.jpg',photos:['https://example.test/detail.jpg']};
  const catalog=await setup('catalogo',{products:[p]});catalog.document.getElementById('sort').value='high';catalog.document.getElementById('sort').onchange();

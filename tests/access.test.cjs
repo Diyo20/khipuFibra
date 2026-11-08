@@ -114,6 +114,17 @@ test('Phase 1 migrations enforce real PostgreSQL permissions and account transit
   await denied(null,'select * from public.artesanas_perfiles');
   await denied(null,'select * from public.productos');
  });
+ await t.test('proposed gallery preserves main images, limits extra photographs and keeps ownership checks',async()=>{
+  // This proposal is exercised locally only; the hosted smoke uses the applied schema.
+  await db.exec(migration('_product_gallery.sql'));
+  await as('a','update public.productos set gallery_urls=$1 where id=$2',[['https://storage.example/a/detail.jpg'],productA]);
+  const product=(await rpc(null,'khipu_public_catalog')).products.find(p=>p.id===productA);
+  assert.deepEqual(product.photos,['https://storage.example/a/detail.jpg']);
+  assert.equal((await as('b',"update public.productos set gallery_urls='{}' where id=$1 returning id",[productA])).rows.length,0);
+  await denied('a',"update public.productos set gallery_urls=array['one','two','three'] where id=$1",[productA]);
+  await denied('a',"update public.productos set gallery_urls=array[null::text] where id=$1",[productA]);
+  await as('a',"update public.productos set gallery_urls='{}' where id=$1",[productA]);
+ });
  await t.test('suspension revokes access with an existing JWT and hides catalog without deleting',async()=>{
   await rpc('admin','khipu_manage_member',['$1',"'suspend'"],[ids.a]);
   assert.equal(await rpc('a','soy_artesana_autorizada'),false);

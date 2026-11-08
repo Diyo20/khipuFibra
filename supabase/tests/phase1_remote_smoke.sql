@@ -76,6 +76,20 @@ begin
    raise exception 'FAIL: cross-owner attribution';
   exception when insufficient_privilege then null; end;
 
+  -- Reopen a saved draft, publish an edit, and delete a duplicate. This entire
+  -- block is rolled back, so it cannot leave products or accounts behind.
+  update public.productos set publicado=false,price=0,story='Persisted draft',care='Keep dry',dimensions='30 cm' where id=product_a;
+  if not exists(select 1 from public.productos where id=product_a and not publicado and price=0 and story='Persisted draft' and care='Keep dry' and dimensions='30 cm') then raise exception 'FAIL: draft persistence'; end if;
+  catalog:=public.khipu_public_catalog();
+  if exists(select 1 from jsonb_array_elements(catalog->'products') p where p->>'id'=product_a::text) then raise exception 'FAIL: draft is public'; end if;
+  update public.productos set publicado=true,price=null,stock='Agotado' where id=product_a;
+  catalog:=public.khipu_public_catalog();
+  if not exists(select 1 from jsonb_array_elements(catalog->'products') p where p->>'id'=product_a::text and p->>'stock'='Agotado' and p->'price'='null'::jsonb) then raise exception 'FAIL: published edit missing'; end if;
+  insert into public.productos(owner_id,artisan_id,name,publicado) values(test_a,profile_a,'Smoke duplicate',false);
+  delete from public.productos where owner_id=test_a and name='Smoke duplicate' and not publicado;
+  get diagnostics affected=row_count;
+  if affected<>1 then raise exception 'FAIL: duplicate delete'; end if;
+
   execute 'set local role anon';
   perform set_config('request.jwt.claim.sub','',true);
   perform set_config('request.jwt.claims','{}',true);
@@ -118,4 +132,4 @@ begin
 end;
 $$;
 select jsonb_build_object('passed',true,'temporary_data_rolled_back',true,
- 'checks',jsonb_build_array('pending_access','role_escalation_denied','admin_approval','own_product_and_storage','cross_owner_denied','public_catalog_privacy','suspension','reactivation','audit','rollback')) as phase1_smoke;
+ 'checks',jsonb_build_array('pending_access','role_escalation_denied','admin_approval','own_product_and_storage','draft_persistence','published_edit','duplicate_delete','cross_owner_denied','public_catalog_privacy','suspension','reactivation','audit','rollback')) as phase1_smoke;

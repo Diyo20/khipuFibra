@@ -10,12 +10,14 @@ function storage(initial={}){const values=new Map(Object.entries(initial));retur
 async function setup({enabled=true,role='artisan',status='active'}={}){
  const {document}=parseHTML(fs.readFileSync(path.join(__dirname,'../panel.html'),'utf8'));
  const calls=[],listeners={};let auth={user:{id:'a',user_metadata:{}},membership:{role,status},approved:role==='artisan'&&status==='active'};
- const cloud={enabled,user:auth.user,membership:auth.membership,approved:auth.approved,init:async()=>auth,myProfile:async()=>({name:'Ana',bio:'',story:''}),list:async()=>({profiles:[],products:[],reviews:[]}),clearPrivate:()=>calls.push(['clear'])};
+ const cloud={enabled,user:auth.user,membership:auth.membership,approved:auth.approved,init:async()=>auth,myProfile:async()=>({name:'Ana',bio:'',story:''}),myProducts:async()=>[],list:async()=>({profiles:[],products:[],reviews:[]}),clearPrivate:()=>calls.push(['clear'])};
  const window={khipuCloud:cloud,addEventListener:(name,fn)=>{listeners[name]=fn;}};
  const location={search:'',replace:url=>calls.push(['redirect',url])};
  const localStorage=storage({khipuFibra_v2:JSON.stringify({logged:true,artisan:{name:'Old user'},favorites:['d1']})});
  class Image{set src(value){/* no real network in unit tests */}}
- vm.runInNewContext(source,{window,document,location,localStorage,sessionStorage:storage(),structuredClone,URLSearchParams,Image,console,setTimeout});await tick();
+ const context=vm.createContext({window,document,location,localStorage,sessionStorage:storage(),structuredClone,URLSearchParams,Image,console,setTimeout});
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/artisan-workspace.js'),'utf8'),context);
+ vm.runInContext(source,context);await tick();
  return {document,calls,focus:()=>listeners.focus?.(),changeAccount:id=>{auth={...auth,user:{id}};cloud.user=auth.user;}};
 }
 test('private pages deny forged localStorage login when Supabase is unconfigured',async()=>{
