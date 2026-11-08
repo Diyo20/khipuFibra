@@ -24,10 +24,18 @@ fs.mkdirSync(destination,{recursive:true});
 for(const file of fs.readdirSync(root).filter(file=>file.endsWith('.html')))fs.copyFileSync(path.join(root,file),path.join(destination,file));
 fs.mkdirSync(path.join(destination,'assets'),{recursive:true});
 for(const file of fs.readdirSync(path.join(root,'assets')).filter(file=>/\.(?:js|css|png|svg)$/.test(file)))fs.copyFileSync(path.join(root,'assets',file),path.join(destination,'assets',file));
-// The visual pilot loads the skill's unchanged motion layer from its own folder.
-for(const file of ['motion.css','motion.js']){
- const source=path.join(root,'assets/motion',file);
- if(fs.existsSync(source)){fs.mkdirSync(path.join(destination,'assets/motion'),{recursive:true});fs.copyFileSync(source,path.join(destination,'assets/motion',file));}
+// Only public asset folders; server code, docs and tests never enter dist.
+function copyAssets(relative){
+ const source=path.join(root,'assets',relative);
+ if(!fs.existsSync(source))return;
+ for(const entry of fs.readdirSync(source,{withFileTypes:true})){
+  const item=path.join(relative,entry.name);
+  if(entry.isDirectory())copyAssets(item);
+  else if(/\.(?:js|css|png|svg|jpg|jpeg|webp|avif)$/.test(entry.name)){
+   const target=path.join(destination,'assets',item);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,'assets',item),target);
+  }
+ }
 }
+for(const folder of ['motion','moments','img'])copyAssets(folder);
 fs.writeFileSync(path.join(destination,'assets/supabase-config.js'),'// Public configuration generated for this deployment.\nwindow.KHIPU_CONFIG = '+JSON.stringify(config,null,2)+';\n');
 console.log('Static frontend built in dist/. Supabase access: '+(config.supabaseUrl?'configured':'not configured'));

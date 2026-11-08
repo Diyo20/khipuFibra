@@ -1,0 +1,304 @@
+{
+ "page": "index.html",
+ "partial": false,
+ "results": [
+  {
+   "w": 1440,
+   "rows": [
+    {
+     "name": "host CPU load (before/after)",
+     "value": "26/24 %",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "total transfer",
+     "value": "756 KiB",
+     "verdict": "PASS",
+     "note": "html 1.5K  css 66.7K  js 176.8K  font 101.9K  img 406.5K  other 2.6K"
+    },
+    {
+     "name": "requests",
+     "value": 29,
+     "verdict": "PASS",
+     "note": "29 by load"
+    },
+    {
+     "name": "images bytes",
+     "value": "406.5 KiB",
+     "verdict": "PASS",
+     "note": "5 files"
+    },
+    {
+     "name": "largest image",
+     "value": "381.4 KiB",
+     "verdict": "WARN",
+     "note": "img/photo-f77718068-1280.jpg"
+    },
+    {
+     "name": "JS parsed",
+     "value": "342.1 KiB",
+     "verdict": "PASS",
+     "note": "10 files, 176.8K gz"
+    },
+    {
+     "name": "CSS",
+     "value": "66.7 KiB",
+     "verdict": "PASS",
+     "note": "6 files"
+    },
+    {
+     "name": "font families",
+     "value": 2,
+     "verdict": "PASS",
+     "note": "DM Sans, Fraunces"
+    },
+    {
+     "name": "font files",
+     "value": 2,
+     "verdict": "PASS",
+     "note": "101.9K"
+    },
+    {
+     "name": "font bytes",
+     "value": "101.9 KiB",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "images without width+height",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "below-fold images not lazy",
+     "value": 1,
+     "verdict": "WARN",
+     "note": "logo-header-104.png"
+    },
+    {
+     "name": "oversized images (natural > 2.2x shown)",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL live at load",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL live at bottom",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL peak live",
+     "value": 0,
+     "verdict": "PASS",
+     "note": "0 contexts made in all"
+    },
+    {
+     "name": "long tasks",
+     "value": 0,
+     "verdict": "PASS",
+     "note": "runs 3, 0..1, max 54ms"
+    },
+    {
+     "name": "blocking time",
+     "value": "0 ms",
+     "verdict": "PASS",
+     "note": "runs 3, 0..4 ms; at load 0ms"
+    },
+    {
+     "name": "FCP (CPU, relative)",
+     "value": "408 ms",
+     "verdict": "PASS",
+     "note": "runs 3, 208..692"
+    },
+    {
+     "name": "LCP (CPU, relative)",
+     "value": "408 ms",
+     "verdict": "PASS",
+     "note": "runs 3, 208..692, p.container"
+    },
+    {
+     "name": "layout shift",
+     "value": "0.009",
+     "verdict": "PASS",
+     "note": "runs 3, 0.005..0.025; at load 0.005"
+    },
+    {
+     "name": "modules loaded, never mounted",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "broken requests",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "page height",
+     "value": "5.3 screens",
+     "verdict": "PASS",
+     "note": "DOM 245 nodes"
+    }
+   ]
+  },
+  {
+   "w": 390,
+   "rows": [
+    {
+     "name": "host CPU load (before/after)",
+     "value": "26/24 %",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "total transfer",
+     "value": "609.9 KiB",
+     "verdict": "PASS",
+     "note": "html 1.5K  css 66.3K  js 176.7K  font 101.9K  img 261.3K  other 2.3K"
+    },
+    {
+     "name": "requests",
+     "value": 29,
+     "verdict": "PASS",
+     "note": "27 by load"
+    },
+    {
+     "name": "images bytes",
+     "value": "261.3 KiB",
+     "verdict": "PASS",
+     "note": "5 files"
+    },
+    {
+     "name": "largest image",
+     "value": "236.2 KiB",
+     "verdict": "PASS",
+     "note": "img/photo-f77718068-960.jpg"
+    },
+    {
+     "name": "JS parsed",
+     "value": "342.1 KiB",
+     "verdict": "PASS",
+     "note": "10 files, 176.7K gz"
+    },
+    {
+     "name": "CSS",
+     "value": "66.3 KiB",
+     "verdict": "PASS",
+     "note": "6 files"
+    },
+    {
+     "name": "font families",
+     "value": 2,
+     "verdict": "PASS",
+     "note": "DM Sans, Fraunces"
+    },
+    {
+     "name": "font files",
+     "value": 2,
+     "verdict": "PASS",
+     "note": "101.9K"
+    },
+    {
+     "name": "font bytes",
+     "value": "101.9 KiB",
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "images without width+height",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "below-fold images not lazy",
+     "value": 1,
+     "verdict": "WARN",
+     "note": "logo-header-104.png"
+    },
+    {
+     "name": "oversized images (natural > 2.2x shown)",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL live at load",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL live at bottom",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "WebGL peak live",
+     "value": 0,
+     "verdict": "PASS",
+     "note": "0 contexts made in all"
+    },
+    {
+     "name": "long tasks",
+     "value": 0,
+     "verdict": "PASS",
+     "note": "runs 3, 0..0, max 0ms"
+    },
+    {
+     "name": "blocking time",
+     "value": "0 ms",
+     "verdict": "PASS",
+     "note": "runs 3, 0..0 ms; at load 0ms"
+    },
+    {
+     "name": "FCP (CPU, relative)",
+     "value": "252 ms",
+     "verdict": "PASS",
+     "note": "runs 3, 184..312"
+    },
+    {
+     "name": "LCP (CPU, relative)",
+     "value": "1124 ms",
+     "verdict": "PASS",
+     "note": "runs 3, 892..2452, img"
+    },
+    {
+     "name": "layout shift",
+     "value": "0.000",
+     "verdict": "PASS",
+     "note": "runs 3, 0.000..0.000; at load 0.000"
+    },
+    {
+     "name": "modules loaded, never mounted",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "broken requests",
+     "value": 0,
+     "verdict": "PASS",
+     "note": ""
+    },
+    {
+     "name": "page height",
+     "value": "7.5 screens",
+     "verdict": "PASS",
+     "note": "DOM 245 nodes"
+    }
+   ]
+  }
+ ]
+}

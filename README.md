@@ -1,8 +1,10 @@
 # khipuFibra — plataforma web de artesanías
 
-## Incremento actual: cuenta y primera pantalla visual
+## Estado actual: tienda y seguridad de cuenta
 
-Mi perfil y Administración incorporan cambio de contraseña de la propia cuenta, reautenticación cuando Auth lo exige y orientación para identidades exclusivamente de Google. La nueva paleta marfil, carbón y terracota se aplica como piloto únicamente a `acceso.html`. Consulta [la auditoría e instrucciones de prueba](docs/INCREMENTO_2_2026-11-08.md). Los correos reales y Google requieren las comprobaciones manuales indicadas allí; no se da por terminada la plataforma 2.0 completa.
+Inicio, Catálogo y Producto tienen nuevas composiciones editoriales; el sistema de marfil, carbón y terracota, encabezado, controles y tarjetas se comparte con las demás páginas. Consulta [el alcance y las pruebas del rediseño](docs/REDISENO_TIENDA.md). La foto de portada es una referencia editorial con licencia y crédito; los productos y perfiles de ejemplo permanecen identificados.
+
+Mi perfil y Administración incorporan cambio de contraseña de la propia cuenta, reautenticación cuando Auth lo exige y orientación para identidades exclusivamente de Google. Consulta [la auditoría e instrucciones de prueba de cuenta](docs/INCREMENTO_2_2026-11-08.md). Los correos reales y Google requieren las comprobaciones manuales indicadas allí; no se da por terminada la plataforma 2.0 completa.
 
 ## Fase 1: roles y autenticación
 

@@ -1,4 +1,4 @@
-name: Phase 1 checks
+name: KhipuFibra checks
 on: [push, pull_request]
 permissions:
   contents: read
