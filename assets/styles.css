@@ -9,3 +9,9 @@
 
 /* Difusión simplificada */
 .share-product-card{display:flex;gap:18px;align-items:center;background:var(--soft);border-radius:17px;padding:14px;margin:5px 0 22px}.share-product-card img{width:116px;height:116px;object-fit:cover;border-radius:12px;background:#fff}.share-product-card b{font-size:17px}.share-product-card p{margin:6px 0}@media(max-width:560px){.share-product-card img{width:90px;height:90px}.share-product-card{gap:12px}.share-product-card .smalllinks{font-size:12px}}
+/* khipuFibra: redes a la vista, sin menús ocultos */
+.social-network-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:8px 0 16px}
+.social-net{border:1px solid #d8ded4;border-radius:13px;padding:15px 7px;background:#fff;color:#1d5142;font-size:.91rem;font-weight:750;cursor:pointer;min-height:53px}
+.social-net.on,.social-net:focus-visible{background:#245e4d;color:#fff;border-color:#245e4d;outline:2px solid #9ed7c3;outline-offset:2px}
+.social-net:hover:not(.on){background:#eff5ef}
+@media(max-width:650px){.social-network-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.social-net{min-height:60px}}
