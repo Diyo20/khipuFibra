@@ -58,10 +58,10 @@ test('unknown artisan profile never displays a demonstration identity',async()=>
  assert.equal(document.querySelector('.profilecover'),null);
 });
 test('prices to consult sort last and a real product image gallery does not invent images',async()=>{
- const p={id:'real',name:'Pieza real',price:null,category:'Bolsos',material:'Algodón',artisan:'Artesana',img:'https://example.test/front.jpg',photos:['https://example.test/detail.jpg']};
+ const p={id:'real',name:'Pieza real',price:null,category:'Bolsos',material:'Algodón',artisan:'Artesana',img:'https://example.test/front.jpg',photos:['https://example.test/detail.jpg','https://example.test/side.jpg']};
  const catalog=await setup('catalogo',{products:[p]});catalog.document.getElementById('sort').value='high';catalog.document.getElementById('sort').onchange();
  assert.equal([...catalog.document.querySelectorAll('[data-product-id]')].at(-1).dataset.productId,'real');assert.equal(catalog.document.querySelector('[data-product-id="real"] .price').textContent,'Consultar precio');
- const product=await setup('producto',{products:[p],search:'?id=real'});const thumbs=product.document.querySelectorAll('[data-product-photo]');assert.equal(thumbs.length,2);thumbs[1].onclick();assert.equal(product.document.getElementById('productImage').src,p.photos[0]);assert.equal(thumbs[1].getAttribute('aria-pressed'),'true');assert.equal(product.document.querySelector('.product-main-image .example-label'),null);
+ const product=await setup('producto',{products:[p],search:'?id=real'});const thumbs=product.document.querySelectorAll('[data-product-photo]');assert.equal(thumbs.length,3);thumbs[2].onclick();assert.equal(product.document.getElementById('productImage').src,p.photos[1]);assert.equal(thumbs[2].getAttribute('aria-pressed'),'true');assert.equal(thumbs[0].getAttribute('aria-pressed'),'false');assert.equal(product.document.querySelector('.product-main-image .example-label'),null);
 });
 test('menu exposes its state, closes on Escape and releases the main content',async()=>{
  const {document}=await setup('index');const toggle=document.getElementById('toggleMenu');toggle.onclick();assert.equal(toggle.getAttribute('aria-expanded'),'true');assert.equal(document.getElementById('mainContent').inert,true);

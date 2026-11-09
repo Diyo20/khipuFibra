@@ -1,4 +1,5 @@
--- PROPOSAL: local only. Remote application requires Diego's approval.
+-- Applied on 2026-11-09 after Diego's explicit authorization.
+-- Filename matches the version recorded by the hosted migration tool.
 -- Keep image_url as the main photograph; store up to two additional photographs.
 -- No row is deleted and no existing privilege or policy is broadened.
 alter table public.productos add column gallery_urls text[] not null default '{}';

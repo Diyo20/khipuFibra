@@ -2,6 +2,8 @@
 
 Incremento del 8 de noviembre de 2026 sobre `develop/khipufibra-fase-1`.
 
+**Actualización del 9 de noviembre:** la galería de hasta tres fotos ya fue implementada y su migración se aplicó con autorización explícita. Consulta [GALERIA_PRODUCTOS.md](GALERIA_PRODUCTOS.md) para el estado actual y las 90 pruebas.
+
 ## Comportamiento implementado
 
 - Inicio conserva el título del usuario: «Hecho a mano. Compartido con el mundo.». La segunda frase usa el terracota `#8C402C`.
@@ -61,13 +63,11 @@ Falta recorrer con una cuenta artesana real en Preview: foto desde teléfono →
 
 El despliegue de la rama es Preview. No se fusiona `main` ni se publica en producción.
 
-## Galería: propuesta pendiente de autorización
+## Galería: ampliación completada el 9 de noviembre
 
-La interfaz actual declara y guarda **una fotografía principal** por producto. No ofrece tres cargas si solo se va a conservar una.
+Ahora se guardan una fotografía principal y hasta dos adicionales. Se pueden agregar, quitar o elegir como principal; el editor vuelve a pedir su aprobación después de cualquier cambio.
 
-Se creó mediante la CLI oficial la migración local `supabase/migrations/20261108222826_product_gallery.sql`. **No está aplicada a Supabase remoto.** Añade `gallery_urls`, conserva `image_url` y todos los registros, limita a dos fotografías adicionales y amplía exclusivamente la lista pública de campos del catálogo. No modifica roles ni amplía RLS. Su prueba local verifica los límites y el bloqueo de cambios entre propietarias.
-
-Aplicarla requiere aprobación expresa del usuario, según la sección 3 del requerimiento original: «Solicita autorización antes de ejecutar migraciones sobre la base de datos remota». Después se conectarán los controles de galería; este incremento no los anuncia como activos. No ejecutar `db push` sin revisar esta migración pendiente.
+La propuesta local anterior se registró en Supabase como `20261109132705_product_gallery.sql`, después de la autorización explícita del usuario. Se renombró el archivo local para coincidir con el historial remoto. Conserva registros, privilegios y políticas RLS. Los detalles y pasos de verificación están en [GALERIA_PRODUCTOS.md](GALERIA_PRODUCTOS.md).
 
 ## Continuación del alcance original
 
@@ -75,7 +75,7 @@ Aplicarla requiere aprobación expresa del usuario, según la sección 3 del req
 |---|---|
 | Acceso, invitaciones y contraseñas | Base implementada; validar correos/usuarios reales y Google cuando se configure |
 | Catálogo público, búsqueda, filtros, precios y favoritos | Implementado; rendimiento público desacoplado de Auth |
-| Productos y perfiles | Persistencia y gestión conectadas; falta galería múltiple y validación con artesanas reales |
+| Productos y perfiles | Persistencia y gestión conectadas; galería de tres fotos implementada; falta validación con artesanas reales |
 | Identidad visual | Inicio/Catálogo/Producto/Acceso y sistema compartido; faltan acabados de Artesanas, perfil público, Favoritos, Difusión y Administración |
 | Panel de artesana | Cuatro accesos y gestión de productos implementados; plan pendiente |
 | Administración | Accesos e invitaciones existentes; faltan filtros avanzados, moderación comercial, motivos, categorías, planes, pagos y consumo |

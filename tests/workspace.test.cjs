@@ -6,7 +6,7 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
 async function setup(page,{search='',rows=[],overrides={},wait=true}={}){
  const dom=parseHTML(fs.readFileSync(path.join(__dirname,'..',page+'.html'),'utf8')),document=dom.document,calls=[];
  const auth={approved:true,user:{id:'a',user_metadata:{}},membership:{role:'artisan',status:'active'}};
- const cloud={enabled:true,...auth,init:async()=>auth,myProfile:async()=>({name:'Ana',whatsapp:'999999999'}),myProducts:async()=>structuredClone(rows),list:async options=>{calls.push(['list',options]);return {products:rows.filter(p=>p.published),profiles:[],reviews:[]};},clearPrivate(){},saveProduct:async(p,options)=>{calls.push(['save',structuredClone(p),options]);const id=p.id||'p-new';const product={...p,id,published:options.published};const i=rows.findIndex(p=>p.id===id);if(i<0)rows.push(product);else rows[i]=product;return {id,imageUrl:p.img};},...overrides};
+ const cloud={enabled:true,...auth,init:async()=>auth,myProfile:async()=>({name:'Ana',whatsapp:'999999999'}),myProducts:async()=>structuredClone(rows),list:async options=>{calls.push(['list',options]);return {products:rows.filter(p=>p.published),profiles:[],reviews:[]};},clearPrivate(){},saveProduct:async(p,options)=>{calls.push(['save',structuredClone(p),options]);const id=p.id||'p-new';const product={...p,id,published:options.published};const i=rows.findIndex(p=>p.id===id);if(i<0)rows.push(product);else rows[i]=product;return {id,imageUrl:p.img,photos:p.photos||[]};},...overrides};
  const location={search,href:'https://preview.example/'+page+'.html'+search,replace:url=>calls.push(['redirect',url]),reload:()=>calls.push(['reload'])};
  const window={khipuCloud:cloud,addEventListener(){},innerWidth:390,confirm:()=>false,history:{replaceState:(a,b,url)=>calls.push(['history',url])}};
  const context=vm.createContext({window,document,location,localStorage:storage(),sessionStorage:storage(),structuredClone,URLSearchParams,URL,console:{...console,error(){}},setTimeout:()=>0,Intl});
@@ -66,4 +66,20 @@ test('profile save sends every field and optional photo to the server before nav
  Object.defineProperty(app.document.getElementById('profileAvatar'),'files',{value:[{name:'foto.jpg'}]});
  const form=app.document.getElementById('profileForm');await form.onsubmit({preventDefault(){},currentTarget:form});
  assert.equal(uploads,1);assert.equal(saved.name,'Ana Artesana');assert.equal(saved.city,'Lambayeque');assert.equal(saved.bio,'Mi historia');assert.equal(saved.story,'Mi oficio');assert.equal(saved.experience,'10 años');assert.equal(saved.fair,'Feria local');assert.equal(saved.avatar,'https://storage.example/profile.jpg');assert.equal(saved.tiktok,values.tiktok);assert.match(app.location.href,/artesana.html\?nombre=Ana%20Artesana/);
+});
+
+test('private editor reopens every photo and keeps the selected main photo across saves',async()=>{
+ const photos=['https://storage.example/a/front.jpg','https://storage.example/a/side.jpg','https://storage.example/a/detail.jpg'];
+ const rows=[{id:'p-gallery',name:'Mi bolso',category:'Bolsos',material:'Algodón',price:85,img:photos[0],photos:photos.slice(1),story:'Creado a mano',stock:'Disponible',published:false}];
+ const app=await setup('nuevo',{search:'?editar=p-gallery',rows});const editor=app.document.getElementById('galleryEditor');
+ assert.equal(editor.querySelectorAll('img').length,3);assert.equal(app.document.getElementById('galleryPhoto').disabled,true);
+ editor.onclick({target:editor.querySelector('[data-photo-main="2"]')});
+ assert.equal(app.document.querySelector('#imagePreview img').src,photos[2]);
+ await app.submit();assert.equal(rows.length,1);assert.equal(rows[0].img,photos[2]);assert.deepEqual(Array.from(rows[0].photos),[photos[0],photos[1]]);
+ const reopened=await setup('nuevo',{search:'?editar=p-gallery',rows});assert.equal(reopened.document.querySelector('#imagePreview img').src,photos[2]);assert.equal(reopened.document.querySelectorAll('#galleryEditor img').length,3);
+});
+
+test('an older database keeps the additional photo control disabled while draft saving still works',async()=>{
+ const app=await setup('nuevo',{overrides:{galleryEnabled:false}});assert.equal(app.document.getElementById('galleryPhoto').disabled,true);assert.match(app.document.getElementById('app').textContent,/galería ampliada aún no está activa/);
+ app.input('prodName','Mi creación');await app.submit();assert.equal(app.rows.length,1);assert.match(app.document.getElementById('saveStatus').textContent,/Borrador guardado/);
 });

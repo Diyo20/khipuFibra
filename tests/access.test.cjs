@@ -114,8 +114,7 @@ test('Phase 1 migrations enforce real PostgreSQL permissions and account transit
   await denied(null,'select * from public.artesanas_perfiles');
   await denied(null,'select * from public.productos');
  });
- await t.test('proposed gallery preserves main images, limits extra photographs and keeps ownership checks',async()=>{
-  // This proposal is exercised locally only; the hosted smoke uses the applied schema.
+ await t.test('gallery preserves main images, limits extra photographs and keeps ownership checks',async()=>{
   await db.exec(migration('_product_gallery.sql'));
   await as('a','update public.productos set gallery_urls=$1 where id=$2',[['https://storage.example/a/detail.jpg'],productA]);
   const product=(await rpc(null,'khipu_public_catalog')).products.find(p=>p.id===productA);

@@ -76,6 +76,21 @@ begin
    raise exception 'FAIL: cross-owner attribution';
   exception when insufficient_privilege then null; end;
 
+  -- The owner can preserve and reorder all three photographs. Cross-account
+  -- writes and oversized galleries still fail under the existing policies.
+  update public.productos set image_url='https://example.invalid/front.jpg',
+   gallery_urls=array['https://example.invalid/side.jpg','https://example.invalid/detail.jpg'] where id=product_a;
+  if not exists(select 1 from public.productos where id=product_a and cardinality(gallery_urls)=2) then raise exception 'FAIL: gallery persistence'; end if;
+  begin
+   update public.productos set gallery_urls=array['one','two','three'] where id=product_a;
+   raise exception 'FAIL: gallery limit bypassed';
+  exception when check_violation then null; end;
+  update public.productos set image_url=gallery_urls[2],gallery_urls=array[image_url,gallery_urls[1]] where id=product_a;
+  if not exists(select 1 from public.productos where id=product_a and image_url='https://example.invalid/detail.jpg' and gallery_urls[1]='https://example.invalid/front.jpg') then raise exception 'FAIL: gallery reorder'; end if;
+  update public.productos set gallery_urls='{}' where id=product_b;
+  get diagnostics affected=row_count;
+  if affected<>0 then raise exception 'FAIL: cross-owner gallery write'; end if;
+
   -- Reopen a saved draft, publish an edit, and delete a duplicate. This entire
   -- block is rolled back, so it cannot leave products or accounts behind.
   update public.productos set publicado=false,price=0,story='Persisted draft',care='Keep dry',dimensions='30 cm' where id=product_a;
@@ -85,6 +100,7 @@ begin
   update public.productos set publicado=true,price=null,stock='Agotado' where id=product_a;
   catalog:=public.khipu_public_catalog();
   if not exists(select 1 from jsonb_array_elements(catalog->'products') p where p->>'id'=product_a::text and p->>'stock'='Agotado' and p->'price'='null'::jsonb) then raise exception 'FAIL: published edit missing'; end if;
+  if not exists(select 1 from jsonb_array_elements(catalog->'products') p where p->>'id'=product_a::text and jsonb_array_length(p->'photos')=2 and p->>'image_url'='https://example.invalid/detail.jpg') then raise exception 'FAIL: public gallery missing'; end if;
   insert into public.productos(owner_id,artisan_id,name,publicado) values(test_a,profile_a,'Smoke duplicate',false);
   delete from public.productos where owner_id=test_a and name='Smoke duplicate' and not publicado;
   get diagnostics affected=row_count;
@@ -132,4 +148,4 @@ begin
 end;
 $$;
 select jsonb_build_object('passed',true,'temporary_data_rolled_back',true,
- 'checks',jsonb_build_array('pending_access','role_escalation_denied','admin_approval','own_product_and_storage','draft_persistence','published_edit','duplicate_delete','cross_owner_denied','public_catalog_privacy','suspension','reactivation','audit','rollback')) as phase1_smoke;
+ 'checks',jsonb_build_array('pending_access','role_escalation_denied','admin_approval','own_product_and_storage','gallery_persistence','gallery_reorder','gallery_limit','public_gallery','draft_persistence','published_edit','duplicate_delete','cross_owner_denied','public_catalog_privacy','suspension','reactivation','audit','rollback')) as phase1_smoke;

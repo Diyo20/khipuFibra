@@ -1,5 +1,8 @@
 # khipuFibra — actualización integrada (Vercel + Supabase)
 
+> **9 de noviembre de 2026:** galería de hasta tres fotografías implementada y migración aplicada con autorización. Consulta [docs/GALERIA_PRODUCTOS.md](docs/GALERIA_PRODUCTOS.md) antes de seguir instrucciones históricas de esta página.
+
+
 > **Fase 1:** consulta primero [docs/FASE_1.md](docs/FASE_1.md). La aprobación ahora se administra mediante membresías protegidas y el panel `admin.html`. Las instrucciones de esta página sobre autorizar/desactivar con `artesanas_autorizadas`, repetir el SQL original y hacer push directo son históricas y no se deben usar para esta rama. No ejecutar SQL ni desplegar en producción antes de probar la migración y el frontend juntos en Preview.
 
 Esta carpeta **conserva tu proyecto HTML/CSS/JS y tu logotipo original** (`assets/logo.png`). Se reutiliza el **mismo repositorio** `Diyo20/khipuFibra` y el despliegue ya enlazado a Vercel.
