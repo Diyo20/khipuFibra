@@ -120,3 +120,9 @@ test('switching accounts while checking gallery support never returns the previo
  api.from=table=>{const query=original(table);query.limit=async()=>{api.auth.getUser=async()=>({data:{user:{id:'b'}}});await cloud.init();return {data:[],error:null};};return query;};
  await assert.rejects(cloud.myProducts(),/cuenta cambió/);
 });
+
+test('administrative status is shown to its owner and a blocked product cannot be published through the client',async()=>{
+ const {cloud,api,uploads}=await setup();const saved=await cloud.saveProduct({name:'Pieza',material:'Fibra',story:'Hecha a mano',img:photo},{published:false});
+ api.rpc=async()=>({data:[{id:saved.id,hidden:true,reason:'Corregir información'}],error:null});const product=(await cloud.myProducts())[0];assert.equal(product.moderationHidden,true);assert.equal(product.moderationReason,'Corregir información');
+ await assert.rejects(cloud.saveProduct(product,{published:true}),/oculto por administración/);assert.equal(uploads.length,1);
+});

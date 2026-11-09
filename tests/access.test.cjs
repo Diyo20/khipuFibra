@@ -124,6 +124,34 @@ test('Phase 1 migrations enforce real PostgreSQL permissions and account transit
   await denied('a',"update public.productos set gallery_urls=array[null::text] where id=$1",[productA]);
   await as('a',"update public.productos set gallery_urls='{}' where id=$1",[productA]);
  });
+ await t.test('commerce moderation is admin-only, keeps durable holds and audits product and review decisions',async()=>{
+  await db.exec(migration('_admin_commerce.sql'));
+  const moderate=(user,kind,id,action,reason='Motivo documentado de prueba')=>rpc(user,'khipu_moderate_commerce',['$1','$2','$3','$4'],[kind,id,action,reason]);
+  for(const user of [null,'a','pending']){
+   await denied(user,'select public.khipu_admin_commerce()');
+   await assert.rejects(moderate(user,'product',productA,'hide'));
+  }
+  for(const user of ['admin','a',null])await denied(user,'select * from public.khipu_product_moderation');
+  const reviewId='40000000-0000-0000-0000-000000000001';
+  await db.query("insert into public.valoraciones(id,kind,target,nombre,comentario,estrellas) values($1,'product',$2,'Visitante','Comentario pendiente de revisión',5)",[reviewId,productA]);
+  const commerce=await rpc('admin','khipu_admin_commerce');assert.equal(commerce.products.length,2);assert.equal(commerce.reviews.length,1);assert.equal(commerce.reviews[0].aprobada,false);
+  await moderate('admin','product',productA,'hide');
+  await as('a','update public.productos set publicado=true where id=$1',[productA]);
+  assert.equal((await rpc(null,'khipu_public_catalog')).products.some(p=>p.id===productA),false);
+  const mine=await rpc('a','khipu_my_product_status');assert.equal(mine[0].hidden,true);assert.equal(mine[0].id,productA);assert.equal((await rpc('b','khipu_my_product_status')).length,0);
+  assert.equal(JSON.stringify(await rpc(null,'khipu_public_catalog')).includes('Motivo documentado'),false);
+  await moderate('admin','product',productA,'restore');
+  assert.equal((await as('a','select publicado from public.productos where id=$1',[productA])).rows[0].publicado,false);
+  await as('a','update public.productos set publicado=true where id=$1',[productA]);assert.equal((await rpc(null,'khipu_public_catalog')).products.length,2);
+  await moderate('admin','review',reviewId,'approve');assert.equal((await as(null,'select id from public.valoraciones where id=$1',[reviewId])).rows.length,1);
+  await denied('a','update public.valoraciones set aprobada=true where id=$1',[reviewId]);
+  await moderate('admin','review',reviewId,'hide');assert.equal((await as(null,'select id from public.valoraciones where id=$1',[reviewId])).rows.length,0);
+  const events=(await db.query("select * from public.khipu_admin_events where action in ('product_hide','product_restore','review_approve','review_hide')")).rows;
+  assert.equal(events.length,4);assert.ok(events.every(event=>event.actor_id===ids.admin&&event.detail.reason==='Motivo documentado de prueba'));
+  await assert.rejects(moderate('admin','product',productA,'hide',''));await assert.rejects(moderate('admin','product',productA,'approve'));
+  assert.equal((await db.query("select count(*)::int n from public.khipu_admin_events where action in ('product_hide','product_restore','review_approve','review_hide')")).rows[0].n,4);
+  const privileged=(await db.query("select proname from pg_proc where pronamespace='public'::regnamespace and proname in ('khipu_admin_commerce','khipu_my_product_status','khipu_moderate_commerce') and prosecdef")).rows;assert.equal(privileged.length,0);
+ });
  await t.test('suspension revokes access with an existing JWT and hides catalog without deleting',async()=>{
   await rpc('admin','khipu_manage_member',['$1',"'suspend'"],[ids.a]);
   assert.equal(await rpc('a','soy_artesana_autorizada'),false);
@@ -185,5 +213,10 @@ test('Phase 1 migrations enforce real PostgreSQL permissions and account transit
   await db.exec(fs.readFileSync(path.join(root,'supabase/tests/phase1_remote_smoke.sql'),'utf8'));
   const after=(await db.query('select count(*)::int n from auth.users')).rows[0].n;
   assert.equal(after,before);
+ });
+ await t.test('commerce smoke script validates moderation and rolls back all fixtures',async()=>{
+  const before=(await db.query('select count(*)::int n from auth.users')).rows[0].n;
+  await db.exec(fs.readFileSync(path.join(root,'supabase/tests/commerce_remote_smoke.sql'),'utf8'));
+  assert.equal((await db.query('select count(*)::int n from auth.users')).rows[0].n,before);
  });
 });

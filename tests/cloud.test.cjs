@@ -56,3 +56,10 @@ test('security methods use verified user identities and Auth reauthentication',a
  assert.deepEqual(JSON.parse(JSON.stringify(await cloud.accountSecurity())),{userId:'a',email:'ana@example.test',passwordIdentity:false,googleIdentity:true});
  let sent=false;api.auth.reauthenticate=async()=>{sent=true;return {error:null};};await cloud.reauthenticate();assert.equal(sent,true);
 });
+
+test('commerce methods distinguish an undeployed migration and use only the audited RPC arguments',async()=>{
+ const {cloud,api}=setup();api.rpc=async()=>({error:{code:'PGRST202',message:'Missing function'}});assert.equal((await cloud.adminCommerce()).available,false);
+ let received;api.rpc=async(...args)=>{received=args;return {data:null,error:null};};await cloud.moderateCommerce('review','review-id','approve','  Motivo documentado  ');
+ assert.deepEqual(JSON.parse(JSON.stringify(received)),['khipu_moderate_commerce',{record_kind:'review',record_id:'review-id',operation:'approve',reason_text:'Motivo documentado'}]);
+ api.rpc=async()=>({error:{code:'42501',message:'Acceso exclusivo'}});await assert.rejects(cloud.adminCommerce(),error=>error.code==='42501');
+});

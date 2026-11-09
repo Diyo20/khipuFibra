@@ -24,6 +24,7 @@ p{max-width:70ch}.small,.tiny{font-size:14px}.eyebrow{font-size:14px;letter-spac
 .input:focus,.textarea:focus,.select:focus{border-color:var(--accent);box-shadow:0 0 0 3px #8C402C1A}
 .field label{font-size:15px;font-weight:500}.field small{font-size:14px}
 :focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.ai-mark{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;line-height:1.2;padding:4px 6px;border:1px solid currentColor;border-radius:5px;white-space:nowrap;vertical-align:middle;margin-left:6px}.ai-mark>span{font-size:16px}.ai-origin{font-size:14px;font-weight:600;color:var(--accent);margin:8px 0}.ai-origin[hidden]{display:none}.profile-first-notice{border-left:4px solid var(--accent);padding:16px 20px;background:var(--soft);margin-block:24px}.profile-first-action b{color:var(--accent)}
 .smalllinks{font-size:15px;font-weight:500;color:var(--ink);display:inline-flex;align-items:center;gap:12px;min-height:44px}
 .smalllinks:hover{text-decoration:underline;text-underline-offset:5px}
 .panel,.surface,.review,.stat,.approval{border-radius:8px;box-shadow:none;background:var(--paper);border-color:var(--line)}

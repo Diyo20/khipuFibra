@@ -14,7 +14,8 @@ async function setup(auth=admin){
  const cloud={enabled:true,init:async()=>current,adminData:async()=>{calls.push(['dashboard']);return dataset;},manageMember:async(...args)=>calls.push(['manage',...args]),inviteArtisan:async()=>({delivered:false,message:'Autorización guardada, correo no enviado.'})};window.khipuCloud=cloud;
  const location={replace:url=>calls.push(['redirect',url])};
  class FormData{constructor(form){this.form=form;}get(){return this.form.querySelector('input').value;}}
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/admin.js'),'utf8'),{window,document,location,FormData,Date,console});
+ const context=vm.createContext({window,document,location,FormData,Date,console});
+ for(const file of ['admin-commerce.js','admin.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets',file),'utf8'),context);
  await tick();
  // LinkeDOM has no dialog top layer or native select default selection.
  const select=document.getElementById('memberFilter');if(select)Object.defineProperty(select,'value',{writable:true,value:'all'});
@@ -38,4 +39,11 @@ test('invitation provider failure is displayed instead of a sent confirmation',a
 });
 test('changing accounts in another tab clears administrator details immediately',async()=>{
  const {document,calls,emit}=await setup();emit({detail:{event:'SIGNED_IN',userId:'artisan'}});assert.equal(document.getElementById('adminContent').textContent,'');assert.deepEqual(calls.at(-1),['redirect','acceso.html']);
+});
+
+test('admin navigation shows one section at a time and preserves access tools before commerce activation',async()=>{
+ const app=await setup();app.cloud.adminCommerce=async()=>({available:false});
+ assert.equal(app.document.getElementById('adminAccessPanel').hidden,false);assert.equal(app.document.getElementById('adminCommercePanel').hidden,true);
+ app.document.querySelector('[data-admin-view="commerce"]').onclick();await tick();assert.equal(app.document.getElementById('adminAccessPanel').hidden,true);assert.match(app.document.getElementById('adminCommercePanel').textContent,/pendiente de activación/);
+ app.document.querySelector('[data-admin-view="history"]').onclick();assert.equal(app.document.getElementById('adminHistoryPanel').hidden,false);assert.equal(app.document.getElementById('adminCommercePanel').hidden,true);
 });

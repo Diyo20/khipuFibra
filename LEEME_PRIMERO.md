@@ -1,5 +1,7 @@
 # khipuFibra — actualización integrada (Vercel + Supabase)
 
+> **Incremento actual:** perfil obligatorio antes del producto, navegación con Mi perfil primero y símbolos ✦ IA. La nueva moderación comercial está preparada y pendiente de autorización remota: [docs/PERFIL_IA_ADMIN.md](docs/PERFIL_IA_ADMIN.md).
+
 > **9 de noviembre de 2026:** galería de hasta tres fotografías implementada y migración aplicada con autorización. Consulta [docs/GALERIA_PRODUCTOS.md](docs/GALERIA_PRODUCTOS.md) antes de seguir instrucciones históricas de esta página.
 
 

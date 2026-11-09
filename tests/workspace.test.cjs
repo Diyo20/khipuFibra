@@ -83,3 +83,39 @@ test('an older database keeps the additional photo control disabled while draft 
  const app=await setup('nuevo',{overrides:{galleryEnabled:false}});assert.equal(app.document.getElementById('galleryPhoto').disabled,true);assert.match(app.document.getElementById('app').textContent,/galería ampliada aún no está activa/);
  app.input('prodName','Mi creación');await app.submit();assert.equal(app.rows.length,1);assert.match(app.document.getElementById('saveStatus').textContent,/Borrador guardado/);
 });
+
+test('missing profiles redirect before product fields or uploads are available',async()=>{
+ let reads=0;const app=await setup('nuevo',{overrides:{myProfile:async()=>null,myProducts:async()=>{reads++;return [];}}});
+ assert.ok(app.calls.some(call=>call[0]==='redirect'&&call[1]==='mi-perfil.html?primero=1'));assert.equal(app.document.getElementById('productForm'),null);assert.equal(reads,0);assert.equal(app.calls.filter(call=>call[0]==='save').length,0);
+});
+
+test('profile is the first workspace action and add-product links point to the prerequisite when missing',async()=>{
+ const app=await setup('panel',{overrides:{myProfile:async()=>null}});const first=app.document.querySelector('.workspace-actions a');assert.equal(first.getAttribute('href'),'mi-perfil.html');assert.match(first.textContent,/Crear mi perfil/);
+ assert.equal(app.document.querySelector('.side a').getAttribute('href'),'mi-perfil.html');assert.ok(app.document.getElementById('profileFirstNotice'));
+ assert.equal(app.document.querySelectorAll('a[href="nuevo.html?crear=1"]').length,0);
+});
+
+test('saving the prerequisite profile continues to the product form only after the server confirms',async()=>{
+ const app=await setup('mi-perfil',{search:'?primero=1',overrides:{myProfile:async()=>null,saveProfile:async()=>{}}});
+ assert.match(app.document.querySelector('h1').textContent,/Crear mi perfil/);assert.match(app.document.querySelector('.profile-first-notice').textContent,/Primero guarda/);
+ app.document.getElementById('profileName').value='Ana real';const form=app.document.getElementById('profileForm');await form.onsubmit({preventDefault(){},currentTarget:form});assert.equal(app.location.href,'nuevo.html?crear=1');
+});
+
+test('social generation and regeneration are both marked as AI and successful text remains editable',async()=>{
+ const rows=[{id:'p1',name:'Bolso',artisan:'Ana',published:true,img:'https://storage.example/a/photo.jpg'}];const app=await setup('difusion',{rows,overrides:{generateDescription:async()=> 'Texto social generado para revisar'}});
+ assert.match(app.document.querySelector('#generateSocial .ai-mark').textContent,/IA/);assert.match(app.document.querySelector('#retrySocial .ai-mark').textContent,/IA/);
+ app.document.getElementById('shareProduct').value='p1';app.document.getElementById('shareChannel').value='facebook';await app.document.getElementById('generateSocial').onclick();assert.equal(app.document.getElementById('socialOrigin').hidden,false);assert.equal(app.document.getElementById('socialPreview').value,'Texto social generado para revisar');assert.equal(app.document.getElementById('shareNative').disabled,true);
+});
+
+test('an administrative hold remains visible and publishing stays disabled after review',async()=>{
+ const rows=[{id:'held',name:'Pieza',material:'Algodón',img:'https://storage.example/front.jpg',photos:[],story:'Hecha a mano',category:'Textiles',moderationHidden:true,moderationReason:'Revisar información',published:false}];const app=await setup('nuevo',{search:'?editar=held',rows});
+ assert.match(app.document.querySelector('.profile-first-notice').textContent,/Oculto por administración/);app.document.getElementById('approveImage').onclick();app.document.getElementById('approveText').onclick();assert.equal(app.document.getElementById('publishProduct').disabled,true);
+ await app.submit();assert.equal(app.rows[0].published,false);
+});
+
+test('social regeneration prevents simultaneous requests and never approves a generated result automatically',async()=>{
+ const pending=deferred();let calls=0;const rows=[{id:'p1',name:'Bolso',published:true,img:'https://storage.example/front.jpg'}];
+ const app=await setup('difusion',{rows,overrides:{generateDescription:()=>{calls++;return pending.promise;}}});app.document.getElementById('shareProduct').value='p1';app.document.getElementById('shareChannel').value='facebook';
+ const first=app.document.getElementById('generateSocial').onclick();await app.document.getElementById('retrySocial').onclick();assert.equal(calls,1);assert.equal(app.document.getElementById('shareProduct').disabled,true);
+ pending.resolve('Texto generado');await first;assert.equal(app.document.getElementById('shareProduct').disabled,false);assert.equal(app.document.getElementById('approveSocial').disabled,false);assert.equal(app.document.getElementById('shareNative').disabled,true);
+});

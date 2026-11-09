@@ -12,7 +12,7 @@ function setup({images=[front],resize=async file=>file.photo}={}){
  window.khipuWorkspace.mountEditor({cloud,draft,store(){},toast(){},resize});
  const upload=(id,files)=>{const input=document.getElementById(id);Object.defineProperty(input,'files',{configurable:true,value:files});return input.onchange();};
  const click=(attribute,index)=>{const list=document.getElementById('galleryEditor');list.onclick({target:list.querySelector(`[${attribute}="${index}"]`)});};
- return {document,draft,calls,upload,click};
+ return {document,draft,calls,upload,click,cloud};
 }
 const file=photo=>({type:'image/jpeg',size:200,name:'foto.jpg',photo});
 test('adding, replacing and removing photographs preserves the other selections and resets approval',async()=>{
@@ -35,4 +35,9 @@ test('publishing submits the whole approved gallery and replaces local images wi
  const app=setup({images:[front,side,detail]});app.click('data-photo-main',2);
  assert.equal(app.document.getElementById('publishProduct').disabled,true);app.document.getElementById('approveImage').onclick();
  await app.document.getElementById('publishProduct').onclick();assert.equal(app.calls.length,1);assert.equal(app.calls[0].p.img,detail);assert.deepEqual(Array.from(app.calls[0].p.photos),[front,side]);assert.equal(app.calls[0].options.published,true);assert.equal(app.draft.photos.length,3);assert.ok(app.draft.photos.every(photo=>photo.startsWith('https://')));assert.equal(app.document.querySelectorAll('#galleryEditor img').length,3);
+});
+
+test('AI actions and successful generated text are marked, while local photo preparation is not labeled as AI',async()=>{
+ const app=setup();assert.match(app.document.querySelector('#generateText .ai-mark').textContent,/IA/);assert.equal(app.document.querySelector('#generateImage .ai-mark'),null);assert.equal(app.document.getElementById('textOrigin').hidden,true);
+ app.cloud.generateDescription=async()=> 'Una descripción generada para revisar';await app.document.getElementById('generateText').onclick();assert.equal(app.document.getElementById('textOrigin').hidden,false);assert.equal(app.draft.ai.textGenerated,true);assert.equal(app.draft.ai.textOK,false);assert.match(app.document.getElementById('approveTextArea').value,/generada/);
 });
