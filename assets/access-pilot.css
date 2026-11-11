@@ -1,9 +1,7 @@
 /* Primera pantalla de la identidad aprobada: Materia, oficio y creadoras.
    Solo se aplica a acceso.html; las demás páginas conservan su sistema actual. */
 .access-pilot{
- --bg:#F7F3EB;--paper:#FCFAF6;--ink:#29251F;--muted:#514A41;
- --green:#8C402C;--green2:#8C402C;--line:#D8CFC2;--soft:#EEE7DC;
- --p-action:#8C402C;--action:#8C402C;--m-ease:cubic-bezier(.2,.8,.2,1);
+ --p-action:var(--accent);--m-ease:cubic-bezier(.2,.8,.2,1);
  background:var(--bg);font-size:16px;line-height:1.6;min-height:100svh;
  display:flex;flex-direction:column;
 }
@@ -14,12 +12,13 @@
 .access-pilot .account-brand small{display:block;margin-top:8px;font:400 14px/1.3 'DM Sans',sans-serif;letter-spacing:0;color:var(--muted)}
 .access-pilot .account-header>a:last-child{gap:16px;color:var(--ink);font-size:15px;text-decoration:none}
 .access-pilot .access-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:96px;align-items:center;flex:1;padding:64px 0}
-.access-story{max-width:480px}
-.access-story>img{width:216px;height:216px;object-fit:contain;margin-bottom:32px}
-.access-story .access-statement{font:600 clamp(30px,2.65vw,40px)/1.2 'Fraunces',Georgia,serif;letter-spacing:-1px;margin-bottom:24px;color:var(--ink)}
-.access-story>p:not(.access-statement){max-width:390px;margin-bottom:24px;color:var(--muted)}
+.access-story{max-width:480px;background:var(--burgundy);color:var(--cream);padding:36px;border-radius:24px 6px 24px 6px;border-bottom:6px solid var(--gold)}
+.access-story>img{width:168px;height:168px;object-fit:contain;margin-bottom:32px;padding:12px;background:var(--cream);border-radius:14px}
+.access-story .access-statement{font:600 clamp(30px,2.65vw,40px)/1.2 'Fraunces',Georgia,serif;letter-spacing:-1px;margin-bottom:24px;color:var(--cream)}
+.access-story>p:not(.access-statement){max-width:390px;margin-bottom:24px;color:var(--cream)}
 .access-story .link{display:inline-flex;align-items:center;gap:16px;min-height:44px;font-size:15px}
-.access-pilot .account-main{width:100%;max-width:440px;justify-self:end;margin:0;padding:0;background:none;border:0;box-shadow:none;border-radius:0;min-width:0}
+.access-story .link{color:var(--cream)}
+.access-pilot .account-main{width:100%;max-width:440px;justify-self:end;margin:0;padding:32px;background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--radius-card);min-width:0}
 .access-pilot .account-main h1{font:600 clamp(30px,2.8vw,40px)/1.2 'Fraunces',Georgia,serif;letter-spacing:-1px;margin:12px 0 16px}
 .access-pilot .account-main>div>p:first-of-type{color:var(--muted);margin-bottom:24px}
 .access-pilot .eyebrow{font-size:14px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--green)}
@@ -27,7 +26,7 @@
 .access-pilot .field label{font-size:15px;font-weight:500;margin-bottom:8px}
 .access-pilot .input{min-height:52px;border-radius:8px;border-color:#938676;background:var(--paper);font-size:16px;padding:12px 16px}
 .access-pilot .input:focus{border-color:var(--green);box-shadow:0 0 0 3px #8C402C1A}
-.access-pilot .btn{min-height:52px;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:600;background:var(--green);color:var(--bg)}
+.access-pilot .btn{min-height:52px;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:600;background:var(--accent);color:var(--cream)}
 .access-pilot .btn.alt{border-color:var(--line);color:var(--ink);background:transparent}
 .access-pilot .btn.alt:hover{background:var(--soft)}
 .access-pilot .btn:disabled{opacity:1;color:var(--muted);background:var(--soft);border-color:var(--line);cursor:not-allowed}
@@ -64,7 +63,7 @@
  .access-story .access-statement{font-size:24px;letter-spacing:-.4px;text-align:center;margin:0}
  .access-story .access-statement br{display:none}
  .access-story>p:not(.access-statement),.access-story>.link{display:none}
- .access-pilot .account-main{max-width:none}
+ .access-pilot .account-main{max-width:none;padding:24px}
  .access-pilot .account-main h1{font-size:32px;margin:8px 0 12px}
  .access-pilot .account-main>div>p:first-of-type{margin-bottom:20px}
  .access-pilot .account-links{flex-direction:row;gap:4px 12px}
@@ -80,3 +79,22 @@
  .access-pilot .account-header>a:last-child{font-size:13px;max-width:none;white-space:nowrap}
  .access-pilot .account-main h1{font-size:30px}
 }
+
+/* Account flows share the storefront palette; their form handlers are unchanged. */
+.access-pilot .account-header{border-bottom:3px solid var(--gold);padding-inline:24px;min-height:96px}
+.access-pilot .account-header .account-brand,.access-pilot .account-header>a:last-child{color:var(--cream)}
+.access-pilot .account-header .account-brand small{color:var(--bg)}
+.access-pilot .account-header :focus-visible{outline-color:var(--gold-light)}
+.access-pilot .access-story>.link{color:var(--cream)}
+.access-pilot .access-story a:focus-visible{outline:3px solid var(--cream);outline-offset:4px}
+.access-pilot .account-main .eyebrow{color:var(--burgundy)}
+.access-pilot .btn{background:var(--accent);border-color:var(--accent);color:var(--cream)}
+.access-pilot .btn:hover{background:var(--accent-dark)}
+.access-pilot .btn.alt{background:var(--cream);color:var(--burgundy);border-color:var(--burgundy)}
+.access-pilot .btn.alt:hover{background:var(--burgundy);color:var(--cream)}
+.access-pilot .input:focus{border-color:var(--burgundy);box-shadow:0 0 0 3px #650D2220}
+.access-pilot .account-main .success{background:#E0E8DA;color:var(--success-dark);border-color:#9CAB91;border-left-color:var(--success)}
+.access-pilot .account-main h1{font-size:36px}
+.access-pilot .account-footer{margin-top:12px}
+@media(max-width:767px){.access-pilot .account-header{padding:16px;min-height:88px}.access-pilot .account-main h1{font-size:32px}.access-pilot .account-main{padding:24px 20px}.access-pilot .access-layout{padding-top:24px}}
+@media(max-width:359px){.access-pilot .account-header{padding:14px 12px}.access-pilot .account-header>a:last-child{white-space:normal;max-width:68px}.access-pilot .account-main h1{font-size:30px}}

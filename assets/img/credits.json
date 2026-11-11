@@ -1,33 +1,30 @@
 {
- "note": "Credits for the photographs in this folder: photos.mjs credits prints the footer block for the ones the pages use.",
- "photos": [
-  {
-   "file": "photo-f77718068-1280.jpg",
-   "files": [
-    "photo-f77718068-500.jpg",
-    "photo-f77718068-960.jpg",
-    "photo-f77718068-1280.jpg"
-   ],
-   "id": "f77718068",
-   "alt": "Woman Weaving (27536467371)",
-   "by": "Tydence Davis from Las Vegas",
-   "licence": "CC BY 2.0",
-   "licenceUrl": "https://creativecommons.org/licenses/by/2.0",
-   "page": "https://commons.wikimedia.org/wiki/File:Woman_Weaving_(27536467371).jpg",
-   "source": "Wikimedia Commons"
-  },
-  {
-   "file": "photo-f76014142-500.jpg",
-   "files": [
-    "photo-f76014142-500.jpg"
-   ],
-   "id": "f76014142",
-   "alt": "Tunic",
-   "by": "Unknown author",
-   "licence": "CC0",
-   "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-   "page": "https://commons.wikimedia.org/wiki/File:Clevelandart_1949.12.jpg",
-   "source": "Wikimedia Commons"
-  }
- ]
+  "note": "La fotografía actual de portada fue confirmada como propia por el responsable del proyecto el 11 de noviembre de 2026. Los demás registros corresponden a sus respectivos archivos.",
+  "photos": [
+    {
+      "file": "photo-f77718068-1280.jpg",
+      "files": [
+        "photo-f77718068-500.jpg",
+        "photo-f77718068-960.jpg",
+        "photo-f77718068-1280.jpg"
+      ],
+      "alt": "Exposición de artesanías y tejidos de KhipuFibra",
+      "source": "Fotografía propia proporcionada por el responsable del proyecto",
+      "externalAttributionRequired": false,
+      "ownershipConfirmed": "2026-11-11"
+    },
+    {
+      "file": "photo-f76014142-500.jpg",
+      "files": [
+        "photo-f76014142-500.jpg"
+      ],
+      "id": "f76014142",
+      "alt": "Tunic",
+      "by": "Unknown author",
+      "licence": "CC0",
+      "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "page": "https://commons.wikimedia.org/wiki/File:Clevelandart_1949.12.jpg",
+      "source": "Wikimedia Commons"
+    }
+  ]
 }

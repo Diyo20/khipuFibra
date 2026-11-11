@@ -10,7 +10,7 @@ const commerce={available:true,products:[{id:'local-product',name:'Creación de 
 const stub=`const qaProfile=${JSON.stringify(profile)},qaProducts=${JSON.stringify(products)},qaAccounts=${JSON.stringify(accounts)},qaCommerce=${JSON.stringify(commerce)};
 const qaUser={id:'qa-local',user_metadata:{}};window.khipuCloud={enabled:true,approved:true,user:qaUser,membership:{role:'artisan',status:'active'},galleryEnabled:true,init:async()=>({user:qaUser,approved:true,membership:window.khipuCloud.membership}),myProfile:async()=>qaProfile,myProducts:async()=>qaProducts,list:async()=>({products:[],profiles:[],reviews:[]}),clearPrivate(){},adminData:async()=>qaAccounts,adminCommerce:async()=>qaCommerce,accountSecurity:async()=>({email:'cuenta@example.test',userId:qaUser.id,passwordIdentity:true}),authSettings:async()=>({}),generateDescription:async()=>{throw Error('Verificación local: IA deshabilitada.');},saveProduct:async()=>{throw Error('Verificación local: sin guardados.');},saveProfile:async()=>{throw Error('Verificación local: sin guardados.');},logout:async()=>{throw Error('Verificación local: sin sesión real.');}};
 `;
-const cases=[['panel','panel'],['perfil-primero','panel'],['editor','nuevo'],['perfil','mi-perfil'],['promocionar','difusion'],['admin-resumen','admin'],['admin-accesos','admin'],['admin-comercio','admin'],['admin-historial','admin'],['admin-seguridad','admin'],['editor-fotos','nuevo'],['editor-descripcion','nuevo'],['editor-revision','nuevo']];
+const cases=[['panel','panel'],['perfil-primero','panel'],['editor','nuevo'],['perfil','mi-perfil'],['promocionar','difusion'],['admin-resumen','admin'],['admin-accesos','admin'],['admin-comercio','admin'],['admin-historial','admin'],['admin-seguridad','admin'],['editor-fotos','nuevo'],['editor-descripcion','nuevo'],['editor-revision','nuevo'],['admin-confirmar','admin'],['admin-moderar','admin']];
 for(const [name,page] of cases){
  let html=fs.readFileSync(path.join(root,page+'.html'),'utf8');
  html=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'').replace('<head>','<head><base href="/">').replace(/(href|src)="assets\//g,'$1="/assets/');
@@ -21,10 +21,12 @@ for(const [name,page] of cases){
  if(page==='nuevo')init+=`sessionStorage.setItem('khipuFibra_private_qa-local',JSON.stringify({draft:{...qaProducts[0],id:null,photos:[qaProducts[0].img],ai:{text:qaProducts[0].story,textOK:false,imageOK:false,textGenerated:false}}}));`;
  html=html.replace('<body ', '<body ').replace(/(<body[^>]*>)/,'$1<div class="qa-fixture-label" style="padding:8px 16px;background:#29251F;color:#F7F3EB;font:12px sans-serif">Verificación local · datos sintéticos · sin conexión al servidor</div>');
  const scripts=admin?['account-security.js','admin-commerce.js','admin.js']:['account-security.js','storefront.js','artisan-workspace.js','app.js'];
- const view={'admin-accesos':'access','admin-comercio':'commerce','admin-historial':'history','admin-seguridad':'security'}[name];
+ const view={'admin-accesos':'access','admin-comercio':'commerce','admin-historial':'history','admin-seguridad':'security','admin-confirmar':'access','admin-moderar':'commerce'}[name];
  const step={'editor-fotos':1,'editor-descripcion':2,'editor-revision':3}[name];
  let navigate='';if(view)navigate+=`document.querySelector('[data-admin-view="${view}"]')?.click();`;
  if(step!==undefined)navigate+=`document.querySelector('[data-editor-step="${step}"]')?.click();`;
+ if(name==='admin-confirmar')navigate+=`document.querySelector('[data-action="approve"]')?.click();`;
+ if(name==='admin-moderar')navigate+=`setTimeout(()=>document.querySelector('[data-moderate-kind="review"]')?.click(),80);`;
  html=html.replace('</body>',`<script>${init}</script>${scripts.map(file=>`<script src="/assets/${file}"></script>`).join('')}<script>window.addEventListener('load',()=>{setTimeout(()=>{${navigate}},80)});</script></body>`);
  fs.writeFileSync(path.join(destination,'panels-'+name+'.html'),html);
 }

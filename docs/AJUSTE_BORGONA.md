@@ -1,0 +1,15 @@
+GATE: OPEN — la certificación integral anterior sigue abierta; este ajuste no declara un pase global.
+
+# Ajuste terracota y borgoña — 11 de noviembre de 2026
+
+Se conserva la tienda estática y su composición. La paleta solicitada sustituye el verde de marca en tienda, acceso, panel artesanal, administración y diálogos: borgoña #650D22 / #480B1A, terracota #A0442B, ocre #D39A50, marfil #F5E5D0 y chocolate #51271D. Los estados de éxito y disponibilidad mantienen tokens verdes independientes. Las variables antiguas `green` siguen como alias por compatibilidad con los controles existentes.
+
+El logo original se muestra completo con object-fit:contain y contenedor cuadrado suavemente redondeado. La fotografía sigue siendo la propia del proyecto, sin modificar sus archivos. El hero incorpora un patrón geométrico SVG original y una curva SVG decorativa en el flujo normal, con relleno marfil y borde dorado en el mismo trazado; no se utiliza la referencia como imagen de fondo.
+
+Archivos: design-system.css, storefront.css, access-pilot.css, artisan-workspace.css, admin-panel.css, plantilla de portada en storefront.js, nuevo textile-hero.svg y metadatos theme-color de las páginas. No se modifican operaciones de datos, autenticación, rutas ni integraciones. No hay cambios remotos, commit, push ni despliegue.
+
+Validación local: sintaxis y referencias correctas; compilación correcta; contratos de enlaces, IDs y controles conservados; archivos de autenticación, datos, editor y administración iguales a HEAD. Suite: 109/110, persiste la prueba preexistente del enlace WhatsApp del producto de ejemplo sin teléfono válido. Capturas de portada inspeccionadas a 1440 y 390 px con datos sintéticos sin conexión a Supabase. No se realizaron operaciones reales ni se certifican integraciones remotas.
+
+Las capturas y registros de esta revisión se guardan en .taste-skill/burgundy-* (archivos locales de comprobación). La documentación del rediseño integral anterior describe la versión verde y debe leerse como antecedente de este ajuste.
+
+Comprobación automática de portada a 1440, 1024, 768 y 390 px, con barrido adicional a 320 px: cero errores de recursos o scripts; sin hallazgos de desbordamiento, colisión o tamaño de objetivos en esos recorridos. Foco visible, nombres accesibles, jerarquía de encabezados y contraste de botones pasan. El informe bruto burgundy-check.json conserva 51 FAIL y 48 WARN: hero-fill, flush, nav, overlap-text, fold-cut, no-visual, text-only, button-styles, copy-fact, heading-scale, text-contrast, section-gaps, product-shown, row-gap y off-grid. No constituyen una certificación aprobada. Entre ellos, el checker exige hero de pantalla completa (el encargo conserva la composición), interpreta la curva decorativa a ras del borde como falta de margen, y cuenta el eslogan del logo como navegación partida. Se conservan los productos de ejemplo y sus etiquetas. El texto de la banda terracota mide 6.16:1: supera AA, pero no el umbral de 7:1 de la skill; se mantiene el color exacto solicitado. No se ocultan ni borran estos resultados.

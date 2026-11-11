@@ -2,6 +2,8 @@ GATE: OPEN 15 (rounds used up)
 
 # Rediseño de tienda — Materia, oficio y creadoras
 
+> Documento histórico. El rediseño integral local del 11 de noviembre de 2026 y la confirmación de la fotografía propia de portada se documentan en [REDISENO_INTEGRAL.md](REDISENO_INTEGRAL.md). Las atribuciones editoriales anteriores no describen la imagen actual suministrada por el usuario.
+
 Tipo: catálogo de productos artesanales peruanos (product / other), con gestión privada existente.
 
 Dirección del brief: marfil `#F7F3EB`, carbón `#29251F` y terracota `#8C402C`; Fraunces y DM Sans. La paleta enlaza con los tonos del logotipo, que se conserva. No se sortearon colores o tipografías distintos de los aprobados. El dealer seleccionó hero `product`: título y acción sobre una fotografía amplia. El momento seleccionado es `word-highlight` en la explicación del contacto.
