@@ -1,0 +1,65 @@
+/* Administrative presentation only; access checks and operations stay in admin.js. */
+body[data-page="admin"]{background:#EDE7DD}
+.admin-main{margin-block:24px 64px;max-width:1440px}
+.admin-shell{display:grid;grid-template-columns:224px minmax(0,1fr);gap:32px;align-items:start}
+.admin-sidebar{background:#3D2B25;border-radius:16px;color:#F7F3EB;position:sticky;top:24px;min-width:0}
+.admin-menu summary{display:none;cursor:pointer;padding:18px 20px;min-height:56px;font-weight:600}
+.admin-nav-content{padding:28px 16px 20px}
+.admin-nav-brand{font:500 26px/1.25 'Fraunces',Georgia,serif;margin:0 12px 32px;color:#F7F3EB}
+.admin-nav-brand span{display:block;font:500 12px/1.5 'DM Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#D4BFB1;margin-top:10px}
+.admin-sidebar .admin-view-nav{display:grid;gap:6px;margin:0 0 40px}
+.admin-sidebar .admin-view-nav .btn{background:transparent;border:0;color:#E7D8CC;text-align:left;justify-content:flex-start;gap:12px;font-size:15px;font-weight:500;padding:14px 12px;line-height:1.4;border-radius:8px;box-shadow:none}
+.admin-sidebar .admin-view-nav .btn:hover{background:#503930}
+.admin-sidebar .admin-view-nav .btn[aria-pressed="true"]{background:#F0DFCF;color:#3D2B25;font-weight:700}
+.admin-sidebar .nav-icon{font:400 23px/1 'DM Sans',sans-serif;width:24px;flex-shrink:0;text-align:center}
+.admin-sidebar #adminLogout{color:#F7F3EB;border-color:#8B7062;width:100%;font-size:14px;background:transparent}
+.admin-sidebar #adminLogout:hover{background:#503930}
+.admin-sidebar :focus-visible{outline-color:#F0DFCF}
+.admin-body{min-width:0}
+.admin-body>.section-head{border-bottom:1px solid #D0C4B4;padding-bottom:24px;margin-bottom:28px}
+.admin-main h1{font:600 clamp(26px,3vw,36px)/1.2 'DM Sans',sans-serif;letter-spacing:-.04em;margin-block:10px}
+.admin-main h2{font:600 23px/1.3 'DM Sans',sans-serif;letter-spacing:-.025em}
+.admin-body .panel{background:#F7F3EB;border:1px solid #D8CDBD;border-radius:12px;padding:28px}
+.admin-body .admin-section{margin-top:24px}
+.admin-body .admin-view[hidden]{display:none!important}
+#adminOverviewPanel{padding-top:8px}
+.admin-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-block:28px}
+.admin-counts p{border:1px solid #D2C3AF;background:#E1D4C0;padding:24px;border-radius:12px;margin:0;font-size:14px;color:#433B32}
+.admin-counts p:first-child{background:#EBD5C2}
+.admin-counts p:nth-child(2){background:#DDE2D3}
+.admin-counts strong{font:600 42px/1.2 'DM Sans',sans-serif;color:#3D2B25;margin-bottom:12px;letter-spacing:-.05em}
+.admin-overview-links{display:flex;flex-wrap:wrap;gap:12px}
+.admin-summary-note{font-size:14px;color:var(--muted);margin-top:24px}
+.admin-main .field{max-width:640px}
+.admin-main #memberFilter{max-width:320px}
+.admin-main .admin-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;padding:24px 0;border-color:#D8CDBD;align-items:center}
+.admin-row b{font-size:16px;overflow-wrap:anywhere}
+.admin-row .account-email{font-size:14px;margin-block:6px 10px}
+.admin-row .account-actions{max-width:300px;justify-content:flex-end}
+.admin-row .tag,.admin-row .role-badge{display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:4px 10px;font-size:12px;font-weight:600;border-radius:6px;background:#E3DCCE;color:#443D34}
+.admin-row .account-state:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.admin-row .state-active{background:#DFE7D5;color:#384C2D}
+.admin-row .state-pending{background:#EFE0C4;color:#65451B}
+.admin-row .state-suspended,.admin-row .state-rejected{background:#EED9CF;color:#803923}
+.admin-row .role-badge{background:#E5D9CE;color:#573F32}
+.admin-row .invitation-state{display:inline-flex;margin-bottom:6px;padding:4px 10px;border-radius:6px;background:#E5D9CE;color:#573F32;font-size:12px;font-weight:600}
+.admin-history{list-style:none;padding:0;margin:24px 0 0}
+.admin-history li{margin:0;padding:20px 0 20px 20px;border-left:2px solid #B5A18C;border-bottom:1px solid var(--line)}
+.admin-history li>b{font-size:16px}
+.admin-body .commerce-row,.admin-body .commerce-review{background:#F7F3EB;border:1px solid #D8CDBD;border-radius:12px;padding:24px;margin-top:16px}
+.admin-body .commerce-row h3,.admin-body .commerce-review h3{font:600 19px/1.4 'DM Sans',sans-serif;letter-spacing:-.02em}
+.admin-body .commerce-row .eyebrow,.admin-body .commerce-review .eyebrow{display:inline-flex;padding:4px 10px;border-radius:6px;background:#E9DDC7;color:#65451B;font-size:12px}
+.admin-body .commerce-row[data-state="published"] .eyebrow,.admin-body .commerce-review[data-state="approved"] .eyebrow{background:#DFE7D5;color:#384C2D}
+.admin-body .commerce-row[data-state="hidden"] .eyebrow{background:#EED9CF;color:#803923}
+.admin-body .commerce-filters{background:#E3D9CA;border-radius:12px;padding:20px;margin-bottom:24px}
+.admin-body .commerce-filters .field{margin:0}
+.admin-body .commerce-tabs{margin-top:0}
+.admin-body .commerce-tabs a{font-weight:600}
+.admin-body #commerceReviews{margin-top:32px}
+.admin-main .btn{white-space:normal}
+.admin-main dialog{max-height:calc(100dvh - 32px);overflow:auto}
+@media(min-width:901px){.admin-menu:not([open])>.admin-nav-content{display:block}.admin-menu::details-content{content-visibility:visible}}
+@media(max-width:1100px){.admin-shell{grid-template-columns:200px minmax(0,1fr);gap:24px}.admin-body .panel{padding:24px}.admin-main .admin-row{grid-template-columns:1fr}.admin-row .account-actions{justify-content:flex-start;max-width:none}.admin-counts p{padding:20px}}
+@media(max-width:900px){.admin-shell{grid-template-columns:minmax(0,1fr);gap:24px}.admin-sidebar{position:static}.admin-menu summary{display:flex;align-items:center;justify-content:space-between;gap:12px}.admin-menu summary span{font-size:14px;font-weight:400}.admin-nav-content{padding-top:8px}.admin-nav-brand{display:none}.admin-sidebar .admin-view-nav{margin-bottom:20px}.admin-main{margin-top:16px}.admin-sidebar{border-radius:12px}.admin-body>.section-head{padding-bottom:20px}}
+@media(max-width:599px){.admin-counts{grid-template-columns:1fr;gap:12px;margin-block:24px}.admin-counts p{display:flex;align-items:center;gap:20px;padding:18px 20px}.admin-counts strong{margin:0;min-width:48px;font-size:36px}.admin-body .panel{padding:20px}.admin-main h2{font-size:22px}.admin-main .admin-row{gap:16px}.admin-row .account-actions{width:100%}.admin-row .account-actions .btn{flex:1}.admin-overview-links .btn{width:100%}.admin-body .commerce-row,.admin-body .commerce-review{padding:20px}.admin-body .commerce-filters{padding:16px}.admin-main dialog{padding:20px;width:calc(100% - 32px)}}
+@media(prefers-reduced-motion:reduce){.admin-main *{scroll-behavior:auto!important;transition:none!important}}

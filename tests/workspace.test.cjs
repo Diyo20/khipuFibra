@@ -91,7 +91,7 @@ test('missing profiles redirect before product fields or uploads are available',
 
 test('profile is the first workspace action and add-product links point to the prerequisite when missing',async()=>{
  const app=await setup('panel',{overrides:{myProfile:async()=>null}});const first=app.document.querySelector('.workspace-actions a');assert.equal(first.getAttribute('href'),'mi-perfil.html');assert.match(first.textContent,/Crear mi perfil/);
- assert.equal(app.document.querySelector('.side a').getAttribute('href'),'mi-perfil.html');assert.ok(app.document.getElementById('profileFirstNotice'));
+ assert.equal(app.document.querySelector('.side nav a:nth-child(2)').getAttribute('href'),'mi-perfil.html');assert.ok(app.document.getElementById('profileFirstNotice'));
  assert.equal(app.document.querySelectorAll('a[href="nuevo.html?crear=1"]').length,0);
 });
 
@@ -118,4 +118,29 @@ test('social regeneration prevents simultaneous requests and never approves a ge
  const app=await setup('difusion',{rows,overrides:{generateDescription:()=>{calls++;return pending.promise;}}});app.document.getElementById('shareProduct').value='p1';app.document.getElementById('shareChannel').value='facebook';
  const first=app.document.getElementById('generateSocial').onclick();await app.document.getElementById('retrySocial').onclick();assert.equal(calls,1);assert.equal(app.document.getElementById('shareProduct').disabled,true);
  pending.resolve('Texto generado');await first;assert.equal(app.document.getElementById('shareProduct').disabled,false);assert.equal(app.document.getElementById('approveSocial').disabled,false);assert.equal(app.document.getElementById('shareNative').disabled,true);
+});
+
+test('wizard navigation keeps the same controls and values without saving or generating',async()=>{
+ let generations=0;const app=await setup('nuevo',{overrides:{generateDescription:async()=>{generations++;return 'Texto';}}});
+ const {document}=app,name=document.getElementById('prodName'),description=document.getElementById('approveTextArea');
+ app.input('prodName','Bolso <artesanal>');app.input('prodMaterial','Algodón');app.input('prodPrice','0');app.input('approveTextArea','Una historia escrita por mí.');
+ assert.equal(document.getElementById('editorStep0').hidden,false);
+ for(let step=1;step<4;step++){document.getElementById('editorNext').onclick();assert.equal(document.getElementById('editorStep'+step).hidden,false);assert.equal(document.querySelectorAll('[data-editor-panel]:not([hidden])').length,1);}
+ assert.equal(document.getElementById('prodName'),name);assert.equal(document.getElementById('approveTextArea'),description);
+ const review=document.getElementById('productReview');assert.match(review.textContent,/Bolso <artesanal>/);assert.equal(review.querySelector('artesanal'),null);assert.match(review.textContent,/S\/ 0/);assert.match(review.textContent,/Una historia escrita por mí/);
+ assert.equal(document.getElementById('publishProduct').disabled,true);assert.equal(app.calls.filter(call=>call[0]==='save').length,0);assert.equal(generations,0);
+ document.querySelector('[data-editor-step="0"]').onclick();assert.equal(name.value,'Bolso <artesanal>');assert.equal(description.value,'Una historia escrita por mí.');
+ await app.submit();assert.equal(app.rows.length,1);assert.equal(app.rows[0].published,false);assert.equal(app.rows[0].price,'0');
+});
+
+test('wizard cannot navigate during a pending save and review reflects revised approvals',async()=>{
+ const pending=deferred();const app=await setup('nuevo',{overrides:{saveProduct:()=>pending.promise}});app.input('prodName','Producto');app.input('approveTextArea','Texto');
+ app.document.querySelector('[data-editor-step="3"]').onclick();app.document.getElementById('approveText').onclick();assert.match(app.document.getElementById('productReview').textContent,/Descripción aprobada/);
+ app.input('approveTextArea','Nueva descripción');assert.match(app.document.getElementById('productReview').textContent,/Descripción pendiente/);
+ const request=app.submit();app.document.querySelector('[data-editor-step="0"]').onclick();assert.equal(app.document.getElementById('editorStep3').hidden,false);
+ pending.reject(Error('Sin conexión'));await request;assert.match(app.document.getElementById('saveStatus').textContent,/Sin conexión/);assert.equal(app.document.getElementById('approveTextArea').value,'Nueva descripción');
+});
+
+test('every artisan page exposes the existing sign-out action through its private menu',async()=>{
+ for(const page of ['panel','nuevo','mi-perfil','difusion']){let count=0;const app=await setup(page,{overrides:{logout:async()=>{count++;}}});assert.equal(app.document.querySelectorAll('#logout').length,1);await app.document.getElementById('logout').onclick();assert.equal(count,1);assert.ok(app.calls.some(call=>call[0]==='redirect'&&call[1]==='index.html'));}
 });
