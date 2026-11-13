@@ -1,8 +1,10 @@
 # khipuFibra — actualización integrada (Vercel + Supabase)
 
+> **13 de noviembre de 2026:** dictado por voz incorporado localmente en productos, perfil y promoción, con revisión del texto y manejo de permisos/compatibilidad. Alcance y comprobación: [docs/DICTADO_VOZ.md](docs/DICTADO_VOZ.md). Pendiente probar voz real en teléfonos del piloto.
+
 > **11 de noviembre de 2026 · rediseño integral local:** identidad terracota, borgoña y marfil aplicada a la tienda, acceso, herramientas de artesanas y administración. La fotografía propia del proyecto se conserva en portada. Ajuste de paleta, logo y curva: [docs/AJUSTE_BORGONA.md](docs/AJUSTE_BORGONA.md). Cambios, cobertura y verificación del rediseño anterior: [docs/REDISENO_INTEGRAL.md](docs/REDISENO_INTEGRAL.md). Sin commit, push, despliegue ni modificaciones remotas en este incremento.
 
-> **Incremento actual:** perfil obligatorio antes del producto, navegación con Mi perfil primero y símbolos ✦ IA. La nueva moderación comercial está preparada y pendiente de autorización remota: [docs/PERFIL_IA_ADMIN.md](docs/PERFIL_IA_ADMIN.md).
+> **12 de noviembre de 2026:** moderación comercial activada en Supabase con autorización explícita y comprobación remota satisfactoria; sus datos sintéticos fueron revertidos. Conserva perfil obligatorio y símbolos ✦ IA. Estado y pruebas: [docs/AVANCE_COMERCIO_20261112.md](docs/AVANCE_COMERCIO_20261112.md). Los últimos ajustes de frontend siguen locales, sin despliegue.
 
 > **9 de noviembre de 2026:** galería de hasta tres fotografías implementada y migración aplicada con autorización. Consulta [docs/GALERIA_PRODUCTOS.md](docs/GALERIA_PRODUCTOS.md) antes de seguir instrucciones históricas de esta página.
 

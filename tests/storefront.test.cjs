@@ -6,10 +6,10 @@ const path=require('node:path');
 const {parseHTML}=require('linkedom');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function storage(initial={}){const values=new Map(Object.entries(initial));return {getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};}
-async function setup(page,{search='',products=[]}={}){
+async function setup(page,{search='',products=[],profiles=[]}={}){
  const dom=parseHTML(fs.readFileSync(path.join(__dirname,'..',page+'.html'),'utf8')),document=dom.document;
  const localStorage=storage();
- const cloud={enabled:true,approved:false,user:null,init:async()=>({user:null,approved:false}),list:async()=>({products,profiles:[],reviews:[]}),clearPrivate(){}};
+ const cloud={enabled:true,approved:false,user:null,init:async()=>({user:null,approved:false}),list:async()=>({products,profiles,reviews:[]}),clearPrivate(){}};
  const window={khipuCloud:cloud,addEventListener(){},innerWidth:390};
  const location={href:'https://preview.example/'+page+'.html'+search,search,replace(){}};
  const context=vm.createContext({window,document,location,localStorage,sessionStorage:storage(),structuredClone,URLSearchParams,URL,console,setTimeout:()=>0,Intl});
@@ -33,13 +33,23 @@ test('empty search has a working reset that restores all products',async()=>{
  assert.match(document.getElementById('catalogStatus').textContent,/0 artesanías/);assert.equal(document.querySelectorAll('[data-product-id]').length,0);
  document.getElementById('clearFilters').onclick();assert.equal(document.getElementById('search').value,'');assert.equal(document.querySelectorAll('[data-product-id]').length,6);
 });
-test('product uses its actual heading, complete WhatsApp link, labeled demo content and related pieces',async()=>{
+test('example product has its heading, labeled demo content and related pieces without inventing contact',async()=>{
  const {document}=await setup('producto',{search:'?id=d1'});assert.equal(document.querySelector('h1').textContent,'Bolso Amanecer de Algodón');
- const url=new URL(document.querySelector('a[href^="https://wa.me/"]').getAttribute('href'));const message=url.searchParams.get('text');
- assert.match(message,/Bolso Amanecer/);assert.ok(message.includes('https://preview.example/producto.html?id=d1'),message);
+ assert.equal(document.querySelector('a[href^="https://wa.me/"]'),null);
+ assert.match(document.querySelector('.product-actions .btn').getAttribute('href'),/^artesana\.html\?nombre=/);
  assert.match(document.querySelector('.example-label').textContent,/ejemplo/);assert.match(document.querySelector('.review').textContent,/Opinión de ejemplo/);
  assert.equal(document.querySelector('.related-products [data-product-id="d1"]'),null);
  assert.ok(document.querySelector('label[for="reviewName"]'));assert.ok(document.querySelector('label[for="reviewScore"]'));assert.ok(document.querySelector('label[for="reviewComment"]'));
+});
+
+test('real product links to its saved artisan contact with the product name and public URL',async()=>{
+ const p={id:'saved-piece',name:'Bolso real',price:85,category:'Bolsos',material:'Algodón',artisan:'Artesana de prueba',img:'https://example.test/front.jpg'};
+ for(const phone of ['987654321','+51987654321']){
+  const {document}=await setup('producto',{search:'?id=saved-piece',products:[p],profiles:[{name:p.artisan,whatsapp:phone}]});
+  const url=new URL(document.querySelector('.product-actions a[href^="https://wa.me/"]').getAttribute('href'));
+  assert.equal(url.pathname,'/51987654321');assert.match(url.searchParams.get('text'),/Bolso real/);
+  assert.ok(url.searchParams.get('text').includes('https://preview.example/producto.html?id=saved-piece'));
+ }
 });
 test('unknown product IDs never display another product as the requested one',async()=>{
  const {document}=await setup('producto',{search:'?id=missing'});assert.match(document.querySelector('h1').textContent,/No encontramos/);assert.equal(document.querySelector('a[href^="https://wa.me/"]'),null);

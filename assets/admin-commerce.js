@@ -9,27 +9,37 @@ function productRows(products){return products.map(p=>`<article class="commerce-
 function reviewRows(reviews){return reviews.map(r=>`<article class="commerce-review" data-state="${r.aprobada?'approved':'pending'}"><span class="eyebrow">${r.aprobada?'Aprobada':'Pendiente / oculta'} · ${r.kind==='product'?'Producto':'Artesana'}</span><h3>${e(r.target_name||r.target)}</h3><p><b>${e(r.nombre)}</b> · ${e(r.estrellas)} de 5</p><p>${e(r.comentario)}</p><button class="btn alt" data-moderate-kind="review" data-id="${e(r.id)}" data-action="${r.aprobada?'hide':'approve'}">${r.aprobada?'Ocultar valoración':'Aprobar valoración'}</button></article>`).join('')||'<p class="empty">No hay valoraciones con este estado.</p>';}
 async function mount(root,{cloud,onSaved=()=>{}}){
  if(!root)return;root.innerHTML='<p role="status">Cargando productos y valoraciones…</p>';
- let data,working=false,selected=null;
+ let data,working=false,selected=null,stale=false;
  try{data=await cloud.adminCommerce();if(!root.isConnected)return;if(!data.available){root.innerHTML='<h2>Productos y valoraciones</h2><p class="notice">La gestión comercial está preparada y pendiente de activación. La administración de accesos sigue disponible.</p>';return;}}
  catch(error){if(root.isConnected){root.innerHTML='<h2>Productos y valoraciones</h2><p role="alert">'+e(error.message)+'</p><button class="btn alt" id="commerceRetry">Volver a intentar</button>';root.querySelector('#commerceRetry').onclick=()=>mount(root,{cloud,onSaved});}return;}
  root.innerHTML=render(data);
  const by=id=>root.querySelector('#'+id),normal=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
- const bindActions=()=>root.querySelectorAll('[data-moderate-kind]').forEach(button=>button.onclick=()=>{
-  if(working)return;selected={kind:button.dataset.moderateKind,id:button.dataset.id,action:button.dataset.action};
+ const bindActions=()=>root.querySelectorAll('[data-moderate-kind]').forEach(button=>{button.disabled=stale;button.onclick=()=>{
+  if(working||stale)return;selected={kind:button.dataset.moderateKind,id:button.dataset.id,action:button.dataset.action};
   by('commerceConfirmText').textContent=selected.kind==='product'?(selected.action==='hide'?'El producto dejará de aparecer en el catálogo. Sus datos y fotos se conservan.':'Se retirará el bloqueo. La artesana deberá revisar y volver a publicar el producto.'):(selected.action==='approve'?'La valoración podrá aparecer públicamente.':'La valoración dejará de aparecer públicamente.');
   by('commerceReason').value='';by('commerceConfirmError').hidden=true;by('commerceConfirm').showModal();
- });
+ };});
  const showProducts=()=>{const q=normal(by('commerceSearch').value),filter=by('commerceStatus').value||'all';by('commerceProductList').innerHTML=productRows(data.products.filter(p=>(filter==='all'||status(p)===filter)&&normal(p.name+' '+p.material+' '+p.category+' '+p.artisan_name).includes(q)));bindActions();};
  const showReviews=()=>{const filter=by('commerceReviewFilter').value||'pending';by('commerceReviewList').innerHTML=reviewRows(data.reviews.filter(r=>filter==='all'||(filter==='approved'?r.aprobada:!r.aprobada)));bindActions();};
+ const offerRefresh=()=>{
+  const message=by('commerceMessage');message.textContent='El cambio quedó guardado. Actualiza los registros antes de realizar otra moderación.';
+  const retry=document.createElement('button');retry.type='button';retry.id='commerceRefresh';retry.className='btn alt';retry.textContent='Actualizar registros';message.appendChild(retry);
+  retry.onclick=async()=>{
+   if(working)return;working=true;retry.disabled=true;
+   try{const fresh=await cloud.adminCommerce();if(!root.isConnected)return;if(!fresh.available)throw Error('La gestión comercial no está disponible.');data=fresh;stale=false;showProducts();showReviews();message.textContent='Registros actualizados. El cambio anterior quedó guardado en el historial.';await onSaved();}
+   catch(error){if(root.isConnected){offerRefresh();by('commerceMessage').prepend(document.createTextNode('No se pudieron actualizar los registros: '+error.message+' '));}}
+   finally{working=false;retry.disabled=false;}
+  };
+ };
  by('commerceSearch').oninput=showProducts;by('commerceStatus').onchange=showProducts;by('commerceReviewFilter').onchange=showReviews;
  by('commerceCancel').onclick=()=>{if(!working)by('commerceConfirm').close();};
  by('commerceConfirm').addEventListener('cancel',event=>{if(working)event.preventDefault();});
  by('commerceConfirmForm').onsubmit=async event=>{
-  event.preventDefault();if(working||!selected)return;const reason=by('commerceReason').value.trim();if(reason.length<5||reason.length>500){by('commerceConfirmError').textContent='Escribe un motivo de 5 a 500 caracteres.';by('commerceConfirmError').hidden=false;return;}
+  event.preventDefault();if(working||stale||!selected)return;const reason=by('commerceReason').value.trim();if(reason.length<5||reason.length>500){by('commerceConfirmError').textContent='Escribe un motivo de 5 a 500 caracteres.';by('commerceConfirmError').hidden=false;return;}
   working=true;let committed=false;const controls=[...root.querySelectorAll('button,input,select,textarea')];controls.forEach(control=>control.disabled=true);
   try{await cloud.moderateCommerce(selected.kind,selected.id,selected.action,reason);committed=true;if(!root.isConnected)return;by('commerceConfirm').close();by('commerceMessage').textContent='Cambio guardado en el historial. Actualizando registros…';data=await cloud.adminCommerce();if(!root.isConnected)return;showProducts();showReviews();by('commerceMessage').textContent='Cambio guardado en el historial.';await onSaved();}
-  catch(error){if(root.isConnected){if(committed){by('commerceConfirm').close();by('commerceMessage').textContent='El cambio quedó guardado, pero no se pudo actualizar la lista. Vuelve a abrir esta sección para consultar su estado.';}else{by('commerceConfirmError').textContent=error.message;by('commerceConfirmError').hidden=false;by('commerceMessage').textContent='No se pudo completar la operación: '+error.message;}}}
-  finally{working=false;controls.forEach(control=>control.disabled=false);}
+  catch(error){if(root.isConnected){if(committed){stale=true;selected=null;by('commerceConfirm').close();offerRefresh();}else{by('commerceConfirmError').textContent=error.message;by('commerceConfirmError').hidden=false;by('commerceMessage').textContent='No se pudo completar la operación: '+error.message;}}}
+  finally{working=false;controls.forEach(control=>control.disabled=false);if(stale)root.querySelectorAll('[data-moderate-kind]').forEach(button=>button.disabled=true);}
  };
  showProducts();showReviews();
 }

@@ -37,7 +37,7 @@ Se consultan los 200 registros más recientes de cada sección. «Pendiente / oc
 
 ## Activación de Supabase
 
-**Estado: migración preparada localmente, pendiente de autorización explícita para la base remota.** Archivo: `supabase/migrations/20261109140210_admin_commerce.sql`.
+**Estado: aplicada remotamente el 12 de noviembre de 2026 con autorización explícita.** Archivo sincronizado con la versión alojada: `supabase/migrations/20261112222123_admin_commerce.sql`. Es el mismo SQL autorizado como propuesta `20261109140210_admin_commerce.sql`, sin cambios de contenido. La comprobación remota pasó sus 11 controles y revirtió los datos sintéticos. Detalles: [AVANCE_COMERCIO_20261112.md](AVANCE_COMERCIO_20261112.md).
 
 La propuesta crea una tabla de bloqueos con RLS y sin acceso directo para navegadores. Las operaciones usan wrappers públicos invocadores y funciones privadas con verificación de administrador activo. La consulta de estados de la artesana solo devuelve sus propios registros. El catálogo público excluye un producto bloqueado aunque su propietaria vuelva a marcarlo como publicado. Los motivos administrativos no se exponen públicamente.
 

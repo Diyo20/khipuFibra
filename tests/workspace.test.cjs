@@ -3,17 +3,18 @@ const {parseHTML}=require('linkedom'),fs=require('node:fs'),vm=require('node:vm'
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const storage=()=>{const data=new Map();return {getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value),removeItem:key=>data.delete(key)};};
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
-async function setup(page,{search='',rows=[],overrides={},wait=true}={}){
+async function setup(page,{search='',rows=[],overrides={},wait=true,voice=false}={}){
  const dom=parseHTML(fs.readFileSync(path.join(__dirname,'..',page+'.html'),'utf8')),document=dom.document,calls=[];
  const auth={approved:true,user:{id:'a',user_metadata:{}},membership:{role:'artisan',status:'active'}};
  const cloud={enabled:true,...auth,init:async()=>auth,myProfile:async()=>({name:'Ana',whatsapp:'999999999'}),myProducts:async()=>structuredClone(rows),list:async options=>{calls.push(['list',options]);return {products:rows.filter(p=>p.published),profiles:[],reviews:[]};},clearPrivate(){},saveProduct:async(p,options)=>{calls.push(['save',structuredClone(p),options]);const id=p.id||'p-new';const product={...p,id,published:options.published};const i=rows.findIndex(p=>p.id===id);if(i<0)rows.push(product);else rows[i]=product;return {id,imageUrl:p.img,photos:p.photos||[]};},...overrides};
  const location={search,href:'https://preview.example/'+page+'.html'+search,replace:url=>calls.push(['redirect',url]),reload:()=>calls.push(['reload'])};
  const window={khipuCloud:cloud,addEventListener(){},innerWidth:390,confirm:()=>false,history:{replaceState:(a,b,url)=>calls.push(['history',url])}};
- const context=vm.createContext({window,document,location,localStorage:storage(),sessionStorage:storage(),structuredClone,URLSearchParams,URL,console:{...console,error(){}},setTimeout:()=>0,Intl});
- for(const file of ['storefront.js','artisan-workspace.js','app.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets',file),'utf8'),context);
+ const recordings=[];if(voice)window.SpeechRecognition=class{constructor(){recordings.push(this);}start(){}stop(){}abort(){}};
+ const context=vm.createContext({window,document,location,localStorage:storage(),sessionStorage:storage(),structuredClone,URLSearchParams,URL,Event:dom.window.Event,MutationObserver:dom.window.MutationObserver,console:{...console,error(){}},setTimeout:()=>0,clearTimeout(){},Intl});
+ for(const file of ['storefront.js','artisan-workspace.js','voice-input.js','app.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets',file),'utf8'),context);
  const configure=()=>{for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{writable:true,configurable:true,value:select.querySelector('option[selected]')?.textContent||select.querySelector('option')?.textContent||''});const form=document.getElementById('productForm');if(form)form.reportValidity=()=>true;};
  if(wait){await tick();configure();}
- return {document,cloud,calls,rows,window,location,configure,input:(id,value)=>{const input=document.getElementById(id);input.value=value;input.dispatchEvent(new dom.window.Event('input'));},submit:()=>document.getElementById('productForm').onsubmit({preventDefault(){}})};
+ return {document,cloud,calls,rows,window,location,configure,recordings,input:(id,value)=>{const input=document.getElementById(id);input.value=value;input.dispatchEvent(new dom.window.Event('input'));},submit:()=>document.getElementById('productForm').onsubmit({preventDefault(){}})};
 }
 test('new editor saves a durable draft, reuses its ID and publishes only after explicit approvals',async()=>{
  const app=await setup('nuevo'),{document,input,submit,rows,calls}=app;
@@ -143,4 +144,35 @@ test('wizard cannot navigate during a pending save and review reflects revised a
 
 test('every artisan page exposes the existing sign-out action through its private menu',async()=>{
  for(const page of ['panel','nuevo','mi-perfil','difusion']){let count=0;const app=await setup(page,{overrides:{logout:async()=>{count++;}}});assert.equal(app.document.querySelectorAll('#logout').length,1);await app.document.getElementById('logout').onclick();assert.equal(count,1);assert.ok(app.calls.some(call=>call[0]==='redirect'&&call[1]==='index.html'));}
+});
+
+test('dictated product text invalidates approval and persists through the existing save operation',async()=>{
+ const rows=[{id:'p1',name:'Pieza',material:'Algodón',img:'https://storage.example/front.jpg',photos:[],story:'Historia original.',published:false}];
+ const app=await setup('nuevo',{search:'?editar=p1',rows,voice:true}),doc=app.document;
+ doc.querySelector('[data-editor-step="2"]').onclick();await tick();doc.getElementById('approveImage').onclick();doc.getElementById('approveText').onclick();assert.equal(doc.getElementById('publishProduct').disabled,false);
+ doc.getElementById('approveTextArea').nextElementSibling.querySelector('button').onclick();const recognition=app.recordings[0];recognition.onstart();
+ recognition.onresult({resultIndex:0,results:[Object.assign([{transcript:'Tejida en mi taller.'}],{isFinal:true})]});
+ assert.equal(doc.getElementById('publishProduct').disabled,true);assert.match(doc.getElementById('approveTextArea').value,/Historia original\. Tejida en mi taller\./);
+ app.window.khipuVoice.cancel();doc.getElementById('approveText').onclick();await app.submit();assert.equal(rows[0].story,'Historia original. Tejida en mi taller.');assert.equal(rows[0].published,false);
+});
+
+test('dictation in promotion invalidates sharing approval and never invokes generation',async()=>{
+ let generations=0;const app=await setup('difusion',{voice:true,rows:[{id:'p1',name:'Bolso',published:true,img:'https://storage.example/front.jpg'}],overrides:{generateDescription:async()=>{generations++;return 'Texto';}}});
+ const preview=app.document.getElementById('socialPreview');
+ // Linkedom does not dispatch DOM oninput properties; bridge the existing native handler.
+ preview.addEventListener('input',()=>preview.oninput());
+ preview.value='Texto para compartir.';preview.oninput();app.document.getElementById('approveSocial').onclick();assert.equal(app.document.getElementById('shareNative').disabled,false);
+ preview.nextElementSibling.querySelector('button').onclick();app.recordings[0].onresult({resultIndex:0,results:[Object.assign([{transcript:'Consulta colores.'}],{isFinal:true})]});
+ assert.equal(app.document.getElementById('shareNative').disabled,true);assert.equal(generations,0);assert.equal(preview.value,'Texto para compartir. Consulta colores.');
+ app.window.khipuVoice.cancel();
+});
+
+test('dictated profile history is included in the existing explicit profile save',async()=>{
+ let saved;const app=await setup('mi-perfil',{voice:true,overrides:{saveProfile:async value=>saved=structuredClone(value)}});
+ for(const [id,text] of [['profileBio','Soy artesana de Lambayeque.'],['profileStory','Comparto mi oficio.']]){
+  const target=app.document.getElementById(id);target.value='';target.nextElementSibling.querySelector('button').onclick();
+  app.recordings.at(-1).onresult({resultIndex:0,results:[Object.assign([{transcript:text}],{isFinal:true})]});
+ }
+ assert.equal(saved,undefined);app.window.khipuVoice.cancel();const form=app.document.getElementById('profileForm');await form.onsubmit({preventDefault(){},currentTarget:form});
+ assert.equal(saved.bio,'Soy artesana de Lambayeque.');assert.equal(saved.story,'Comparto mi oficio.');
 });
