@@ -4,6 +4,12 @@
 .voice-input>button{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}
 .voice-input>button::before{content:'';display:block;width:18px;height:18px;background:currentColor;mask:url('microphone.svg') center/contain no-repeat}
 .voice-input>button[aria-pressed=true]{background:var(--writing-accent);border-color:var(--writing-accent);color:var(--writing-paper)}
+/* Dictation feedback stays in normal flow, independently of the fixed control. */
+html body .voice-input>button.btn{width:128px;min-width:128px;max-width:128px;height:44px;min-height:44px;box-sizing:border-box;flex:0 0 128px;white-space:nowrap;transform:none!important;translate:none!important;scale:none!important;transition-property:background-color,color,border-color,opacity}
+html body .voice-input.voice-compact{width:44px;min-width:44px;max-width:44px;height:44px;display:block}
+html body .voice-input.voice-compact>button.btn{width:44px;min-width:44px;max-width:44px;flex-basis:44px;font-size:0;gap:0;padding:10px}
+.voice-feedback{clear:both;max-width:100%;overflow-wrap:anywhere}.voice-feedback:has(>.voice-status:empty):has(>.voice-preview:empty){display:none}
+.voice-feedback>p{margin:6px 0 10px;font-size:14px;line-height:1.5}.voice-feedback>p:empty{display:none}.voice-feedback[hidden],.voice-feedback [hidden]{display:none!important}
 .voice-input>p{flex-basis:100%;margin:0;max-width:65ch;overflow-wrap:anywhere}.voice-input [hidden]{display:none!important}
 .voice-status{color:var(--ink)}.voice-preview{color:var(--muted);font-style:italic}.voice-preview:empty{display:none}
 .voice-compact .voice-status{font-size:13px}.voice-compact{gap:6px 12px}.voice-compact>button{min-height:44px;padding:8px 12px;font-size:14px}

@@ -11,14 +11,16 @@ const stub=`const qaProfile=${JSON.stringify(profile)},qaProducts=${JSON.stringi
 const qaUser={id:'qa-local',user_metadata:{}};window.khipuCloud={enabled:true,approved:true,user:qaUser,membership:{role:'artisan',status:'active'},galleryEnabled:true,init:async()=>({user:qaUser,approved:true,membership:window.khipuCloud.membership}),myProfile:async()=>qaProfile,myProducts:async()=>qaProducts,list:async()=>({products:[],profiles:[],reviews:[]}),clearPrivate(){},adminData:async()=>qaAccounts,adminCommerce:async()=>qaCommerce,accountSecurity:async()=>({email:'cuenta@example.test',userId:qaUser.id,passwordIdentity:true}),authSettings:async()=>({}),generateDescription:async()=>{throw Error('Verificación local: IA deshabilitada.');},saveProduct:async()=>{throw Error('Verificación local: sin guardados.');},saveProfile:async()=>{throw Error('Verificación local: sin guardados.');},logout:async()=>{throw Error('Verificación local: sin sesión real.');}};
 `;
 const cases=[['panel','panel'],['perfil-primero','panel'],['editor','nuevo'],['perfil','mi-perfil'],['promocionar','difusion'],['admin-resumen','admin'],['admin-accesos','admin'],['admin-comercio','admin'],['admin-historial','admin'],['admin-seguridad','admin'],['editor-fotos','nuevo'],['editor-descripcion','nuevo'],['editor-revision','nuevo'],['admin-confirmar','admin'],['admin-moderar','admin'],['editor-voz','nuevo'],['editor-sin-voz','nuevo']];
-cases.push(['editor-foto-ia','nuevo'],['editor-publicado','nuevo']);
+cases.push(['editor-foto-ia','nuevo'],['editor-publicado','nuevo'],['mis-productos','panel'],['perfil-historia','mi-perfil']);
 for(const [name,page] of cases){
  let html=fs.readFileSync(path.join(root,page+'.html'),'utf8');
  html=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'').replace('<head>','<head><base href="/">').replace(/(href|src)="assets\//g,'$1="/assets/');
  const admin=page==='admin';let init=stub;
  if(admin)init+=`window.khipuCloud.membership={role:'admin',status:'active'};`;
  if(name==='perfil-primero')init+='window.khipuCloud.myProfile=async()=>null;window.khipuCloud.myProducts=async()=>[];';
+ if(name==='mis-productos')init+="window.history.replaceState(null,'',location.pathname+'#mis-productos');";
  if(page==='difusion')init+='qaProducts[0].published=true;';
+ if(name==='perfil-historia')init+="qaProfile.experience='12 años creando';";
  if(page==='nuevo')init+=`sessionStorage.setItem('khipuFibra_private_qa-local',JSON.stringify({draft:{...qaProducts[0],id:null,photos:[qaProducts[0].img],ai:{text:qaProducts[0].story,textOK:false,imageOK:false,textGenerated:false}}}));`;
  if(name==='editor-publicado')init+=`qaProducts[0].published=true;window.history.replaceState(null,'',location.pathname+'?editar=local-product');`;
  if(name==='editor-voz')init+=`// Synthetic recognition events only; this fixture never opens a microphone.
@@ -29,10 +31,10 @@ for(const [name,page] of cases){
  const view={'admin-accesos':'access','admin-comercio':'commerce','admin-historial':'history','admin-seguridad':'security','admin-confirmar':'access','admin-moderar':'commerce'}[name];
  const step={'editor-fotos':1,'editor-descripcion':2,'editor-revision':3,'editor-voz':2,'editor-sin-voz':2}[name];
  let navigate='';if(view)navigate+=`document.querySelector('[data-admin-view="${view}"]')?.click();`;
- if(step!==undefined)navigate+=`document.querySelector('[data-editor-step="${step}"]')?.click();`;
- if(name==='editor-publicado')navigate+=`document.querySelector('[data-editor-step="2"]').click();`;
- if(name==='editor-fotos')navigate+=`document.querySelector('#preparar details').open=true;`;
- if(name==='editor-foto-ia')navigate+=`window.khipuCloud.aiQuota=async()=>({remaining:2});window.khipuCloud.improvePhoto=async()=>({image:qaProducts[0].img,quota:{remaining:1}});document.querySelector('[data-editor-step="1"]').click();document.getElementById('photoAIGenerate').click();`;
+ if(step===1)navigate+=`document.getElementById('photoTools').open=true;`;
+ if(step===3)navigate+=`document.getElementById('productReviewDetails').open=true;`;
+ if(name==='perfil-historia')navigate+=`document.getElementById('profileExperience').closest('details').open=true;`;
+ if(name==='editor-foto-ia')navigate+=`window.khipuCloud.aiQuota=async()=>({remaining:2});window.khipuCloud.improvePhoto=async()=>({image:qaProducts[0].img,quota:{remaining:1}});document.getElementById('photoTools').open=true;document.getElementById('photoAIGenerate').click();`;
  if(name==='admin-confirmar')navigate+=`document.querySelector('[data-action="approve"]')?.click();`;
  if(name==='admin-moderar')navigate+=`setTimeout(()=>document.querySelector('[data-moderate-kind="review"]')?.click(),80);`;
  if(name==='editor-voz')navigate+=`setTimeout(()=>document.querySelector('.voice-input button')?.click(),80);`;

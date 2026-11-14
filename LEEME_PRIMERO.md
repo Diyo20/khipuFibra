@@ -1,12 +1,14 @@
 # khipuFibra — actualización integrada (Vercel + Supabase)
 
-> **13 de noviembre de 2026 · Pollinations:** migración de cuotas de imágenes y función `mejorar-foto` activadas tras autorización. Comprobación remota aprobada y datos sintéticos revertidos, sin gastar Pollen. El botón, comparación y aceptación de fotos siguen en el frontend local, pendiente de publicación. Primera generación real pendiente desde una cuenta activa. Uso y límites: [docs/POLLINATIONS_FOTOS.md](docs/POLLINATIONS_FOTOS.md).
+> **13 de noviembre de 2026 · paneles sencillos:** Agregar producto pasa a una pantalla con tres espacios de fotos, herramientas opcionales y guardado directo. Inicio, productos, promoción y perfil simplificados; herramientas administrativas conservadas. Respaldo verificado, 166 pruebas aprobadas y frontend local. Auditoría y verificación: [docs/UX_ARTESANAS_SENCILLA.md](docs/UX_ARTESANAS_SENCILLA.md).
+
+> **13 de noviembre de 2026 · Pollinations:** migración de cuotas de imágenes y función `mejorar-foto` activadas tras autorización. Comprobación remota aprobada y datos sintéticos revertidos, sin gastar Pollen. El propietario confirmó posteriormente que la generación funciona. Uso y límites: [docs/POLLINATIONS_FOTOS.md](docs/POLLINATIONS_FOTOS.md). Las modificaciones actuales de frontend siguen locales.
 
 > **13 de noviembre de 2026 · textos y fotos:** Gemini actualizado para redactar descripciones comerciales con datos reales. Ajustes locales gratuitos de iluminación, contraste, giro y margen blanco en el editor de fotografías. Uso: [docs/TEXTOS_Y_FOTOS_SIN_COSTE.md](docs/TEXTOS_Y_FOTOS_SIN_COSTE.md); el estado posterior de IA de imágenes figura en la nota Pollinations anterior.
 
 > **13 de noviembre de 2026 · planes y Yape:** migración de solicitudes y Storage aplicada con autorización, comprobación remota aprobada y datos sintéticos revertidos. Precio inicial S/ 19; solicitudes de pago deshabilitadas, sin QR configurado. La página `planes.html`, «Mi plan» y «Planes y pagos» siguen en el frontend local, pendiente de publicación. Alcance: [docs/PLANES_YAPE.md](docs/PLANES_YAPE.md).
 
-> **13 de noviembre de 2026 · ampliación de escritura:** cuotas aplicadas y función de generación/mejora adaptada a Gemini mediante `GEMINI_API_KEY`, que el propietario indica haber configurado en Supabase. Modelo predeterminado: `gemini-3.5-flash-lite`; configurable solo en servidor mediante `GEMINI_TEXT_MODEL`. Falta probar generación real desde una cuenta piloto. El frontend de dictado transversal y comparación sigue local. Alcance: [docs/ESCRITURA_ASISTIDA.md](docs/ESCRITURA_ASISTIDA.md). No se incorpora transcripción de audio en backend.
+> **13 de noviembre de 2026 · ampliación de escritura:** cuotas aplicadas y función de generación/mejora adaptada a Gemini mediante `GEMINI_API_KEY`, que el propietario indica haber configurado en Supabase. Modelo predeterminado: `gemini-3.5-flash-lite`; configurable solo en servidor mediante `GEMINI_TEXT_MODEL`. El propietario confirmó posteriormente que la generación real de texto funciona. El frontend de dictado transversal y comparación sigue local. Alcance: [docs/ESCRITURA_ASISTIDA.md](docs/ESCRITURA_ASISTIDA.md). No se incorpora transcripción de audio en backend.
 
 > **13 de noviembre de 2026:** dictado por voz incorporado localmente en productos, perfil y promoción, con revisión del texto y manejo de permisos/compatibilidad. Alcance y comprobación: [docs/DICTADO_VOZ.md](docs/DICTADO_VOZ.md). Pendiente probar voz real en teléfonos del piloto.
 
@@ -36,7 +38,7 @@ Esta carpeta **conserva tu proyecto HTML/CSS/JS y tu logotipo original** (`asset
 - **Publicar automáticamente en Facebook/Instagram**: registrar aplicación Meta, conectar cada página/cuenta profesional con OAuth y obtener permisos de publicación de la app. El campo de URL social **no equivale** a una autorización de publicación. No se han integrado tokens Meta todavía.
 - TikTok publicación directa: API oficial, autorización y revisión. WhatsApp: compartir asistido, no publicación automática en estados.
 - Vista previa de Facebook por producto: requiere URLs que entreguen Open Graph en el HTML de respuesta del servidor; `producto.html?id=...` con metadatos calculados solo en navegador **no basta**. No está implementada esa capa de servidor.
-- Las fotografías se **presentan localmente** con un fondo para revisión, no se crean por IA. Procesamiento generativo de imágenes requiere servicio separado.
+- La mejora de fotografías con IA ya está conectada a Pollinations mediante `mejorar-foto`, con cuotas y revisión antes de aceptar. Los ajustes gratuitos de iluminación, contraste y giro siguen disponibles. Consulta [la guía de fotografías con IA](docs/POLLINATIONS_FOTOS.md).
 - Los ejemplos de artesanas y productos son ficticios y siguen visibles. Antes de lanzamiento comercial hay que señalarlos o sustituirlos.
 - Las reseñas sin login son vulnerables a spam: se guardan pendientes de aprobación. Para producción añadir CAPTCHA y límites de frecuencia.
 

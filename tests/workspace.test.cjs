@@ -4,7 +4,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const storage=()=>{const data=new Map();return {getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value),removeItem:key=>data.delete(key)};};
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function setup(page,{search='',rows=[],overrides={},wait=true,voice=false,imageOps}={}){
- const dom=parseHTML(fs.readFileSync(path.join(__dirname,'..',page+'.html'),'utf8')),document=dom.document,calls=[];
+ const html=fs.readFileSync(path.join(__dirname,'..',page+'.html'),'utf8'),dom=parseHTML(html),document=dom.document,calls=[];
  const auth={approved:true,user:{id:'a',user_metadata:{}},membership:{role:'artisan',status:'active'}};
  const cloud={enabled:true,...auth,init:async()=>auth,myProfile:async()=>({name:'Ana',whatsapp:'999999999'}),myProducts:async()=>structuredClone(rows),list:async options=>{calls.push(['list',options]);return {products:rows.filter(p=>p.published),profiles:[],reviews:[]};},clearPrivate(){},saveProduct:async(p,options)=>{calls.push(['save',structuredClone(p),options]);const id=p.id||'p-new';const product={...p,id,published:options.published};const i=rows.findIndex(p=>p.id===id);if(i<0)rows.push(product);else rows[i]=product;return {id,imageUrl:p.img,photos:p.photos||[]};},...overrides};
  const location={search,href:'https://preview.example/'+page+'.html'+search,replace:url=>calls.push(['redirect',url]),reload:()=>calls.push(['reload'])};
@@ -13,17 +13,19 @@ async function setup(page,{search='',rows=[],overrides={},wait=true,voice=false,
  const Image=class{constructor(){this.width=800;this.height=600;}set src(value){imageOps?.push(['source',value]);this.onload();}};
  if(imageOps){const create=document.createElement.bind(document);document.createElement=tag=>{if(tag!=='canvas')return create(tag);const ctx={fillRect(){},save(){},restore(){},translate(){},rotate(angle){imageOps.push(['rotate',angle]);},drawImage(){imageOps.push(['draw',this.filter]);}};return {getContext:()=>ctx,toDataURL:()=>{imageOps.push(['render']);return 'data:image/jpeg;base64,cHJlcGFyZWQ=';}};};}
  const context=vm.createContext({window,document,location,Image,localStorage:storage(),sessionStorage:storage(),structuredClone,URLSearchParams,URL,Event:dom.window.Event,MutationObserver:dom.window.MutationObserver,console:{...console,error(){}},setTimeout:()=>0,clearTimeout(){},Intl});
- for(const file of ['storefront.js','artisan-workspace.js','writing-fields.js','voice-input.js','plans.js','app.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets',file),'utf8'),context);
- const configure=()=>{for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{writable:true,configurable:true,value:select.querySelector('option[selected]')?.textContent||select.querySelector('option')?.textContent||''});const form=document.getElementById('productForm');if(form)form.reportValidity=()=>true;};
+ cloud.aiQuota||=async()=>({remaining:2});cloud.improveText||=async payload=>({text:payload.source+' mejorado',quota:{remaining:1}});
+ // Load the real page entry points; the authenticated client is the only substituted dependency.
+ for(const match of html.matchAll(/<script\b[^>]*src="assets\/([^"]+\.js)"[^>]*>/g)){const file=match[1];if(['cloud.js','supabase-config.js','storefront-motion.js'].includes(file))continue;vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets',file),'utf8'),context);}
+ const configure=()=>{for(const select of document.querySelectorAll('select')){const option=select.querySelector('option[selected]')||select.querySelector('option');Object.defineProperty(select,'value',{writable:true,configurable:true,value:option?.getAttribute('value')??option?.textContent??''});}const form=document.getElementById('productForm');if(form)form.reportValidity=()=>true;};
  if(wait){await tick();configure();}
  return {document,cloud,calls,rows,window,location,configure,recordings,input:(id,value)=>{const input=document.getElementById(id);input.value=value;input.dispatchEvent(new dom.window.Event('input'));},submit:()=>document.getElementById('productForm').onsubmit({preventDefault(){}})};
 }
-test('new editor saves a durable draft, reuses its ID and publishes only after explicit approvals',async()=>{
+test('one-screen editor saves drafts and publishes after a direct deliberate click',async()=>{
  const app=await setup('nuevo'),{document,input,submit,rows,calls}=app;
  input('prodName','Mi bolso');input('prodMaterial','Algodón');input('approveTextArea','Una pieza hecha a mano.');
  await submit();assert.equal(rows.length,1);assert.equal(rows[0].published,false);assert.equal(rows[0].story,'Una pieza hecha a mano.');assert.match(document.getElementById('saveStatus').textContent,/Borrador guardado/);
  await submit();assert.equal(rows.length,1);assert.equal(calls.filter(c=>c[0]==='save')[1][1].id,'p-new');
- assert.equal(document.getElementById('publishProduct').disabled,true);
+ assert.equal(document.getElementById('publishProduct').disabled,false);
  const image='https://storage.example/a/photo.jpg';rows[0].img=image;
  const edit=await setup('nuevo',{search:'?editar=p-new',rows});
  edit.document.getElementById('approveText').onclick();edit.document.getElementById('approveImage').onclick();assert.equal(edit.document.getElementById('publishProduct').disabled,false);
@@ -49,18 +51,18 @@ test('Pollinations proposals require acceptance, stay tied to the original and s
  await el('photoAIGenerate').onclick();el('photoAIAccept').onclick();assert.equal(app.document.querySelector('#imagePreview img').src,edited);assert.match(el('photoStatus').textContent,/pendientes/);await app.submit();assert.equal(rows[0].img,edited);
 });
 
-test('each editor step saves published changes without repeated approvals or navigation, retaining every photo',async()=>{
+test('one-screen editor updates published changes and retains all photos without a wizard',async()=>{
  const rows=[{id:'published',name:'Aretes',category:'Accesorios',material:'Algodón',img:'https://storage.example/front.jpg',photos:['https://storage.example/side.jpg'],story:'Mi pieza',published:true}],app=await setup('nuevo',{search:'?editar=published',rows}),doc=app.document;
- assert.equal(doc.querySelectorAll('[data-save-step]').length,4);assert.equal(doc.getElementById('approveText').hidden,true);
- for(let step=0;step<4;step++){doc.querySelector('[data-editor-step="'+step+'"]').onclick();app.input('approveTextArea','Cambio '+step);app.input('prodPrice',String(10+step));await doc.querySelector('#editorStep'+step+' [data-save-step]').onclick();assert.equal(doc.getElementById('editorStep'+step).hidden,false);assert.equal(rows[0].published,true);assert.equal(rows[0].story,'Cambio '+step);assert.equal(rows[0].price,String(10+step));assert.equal(rows[0].photos[0],'https://storage.example/side.jpg');}
+ assert.equal(doc.querySelectorAll('[data-editor-panel]').length,0);assert.equal(doc.querySelectorAll('[data-editor-step]').length,0);
+ for(let change=0;change<3;change++){app.input('approveTextArea','Cambio '+change);app.input('prodPrice',String(10+change));await doc.getElementById('publishProduct').onclick();assert.equal(rows[0].published,true);assert.equal(rows[0].story,'Cambio '+change);assert.equal(rows[0].price,String(10+change));assert.equal(rows[0].photos[0],'https://storage.example/side.jpg');}
 });
 
-test('step saves keep drafts and moderated products unpublished without approvals',async()=>{
- for(const moderated of [false,true]){const app=await setup('nuevo',{rows:moderated?[{id:'held',name:'Aretes',published:true,moderationHidden:true,img:'https://storage.example/front.jpg',story:'Mi pieza'}]:[],search:moderated?'?editar=held':''});app.input('prodName','Aretes');await app.document.querySelector('[data-save-step]').onclick();assert.equal(app.rows[0].published,false);assert.match(app.document.querySelector('[data-step-save-status]').textContent,/Borrador guardado/);}
+test('direct draft saves keep drafts and moderated products unpublished',async()=>{
+ for(const moderated of [false,true]){const app=await setup('nuevo',{rows:moderated?[{id:'held',name:'Aretes',published:true,moderationHidden:true,img:'https://storage.example/front.jpg',story:'Mi pieza'}]:[],search:moderated?'?editar=held':''});app.input('prodName','Aretes');await app.submit();assert.equal(app.rows[0].published,false);assert.match(app.document.getElementById('saveStatus').textContent,/Borrador guardado/);}
 });
 
-test('duplicate and failed step saves preserve edits and publication status',async()=>{
- const pending=deferred();let count=0;const rows=[{id:'p',name:'Aretes',published:true,img:'https://storage.example/front.jpg',story:'Original'}],app=await setup('nuevo',{search:'?editar=p',rows,overrides:{saveProduct:()=>{count++;return pending.promise;}}});app.input('approveTextArea','Cambio pendiente');const button=app.document.querySelector('[data-save-step]'),request=button.onclick();await button.onclick();assert.equal(count,1);pending.reject(Error('Sin conexión'));await request;assert.equal(app.rows[0].published,true);assert.equal(app.document.getElementById('approveTextArea').value,'Cambio pendiente');assert.match(app.document.querySelector('[data-step-save-status]').textContent,/Sin conexión/);
+test('duplicate and failed direct saves preserve edits and publication status',async()=>{
+ const pending=deferred();let count=0;const rows=[{id:'p',name:'Aretes',material:'Hilo',published:true,img:'https://storage.example/front.jpg',story:'Original'}],app=await setup('nuevo',{search:'?editar=p',rows,overrides:{saveProduct:()=>{count++;return pending.promise;}}});app.input('approveTextArea','Cambio pendiente');const button=app.document.getElementById('publishProduct'),request=button.onclick();await button.onclick();assert.equal(count,1);pending.reject(Error('Sin conexión'));await request;assert.equal(app.rows[0].published,true);assert.equal(app.document.getElementById('approveTextArea').value,'Cambio pendiente');assert.match(app.document.getElementById('saveStatus').textContent,/Sin conexión/);
 });
 
 test('pending saves are not duplicated and failures preserve user input without success messages',async()=>{
@@ -97,7 +99,7 @@ test('profile failure keeps entered data and re-enables saving, with associated 
 
 test('profile save sends every field and optional photo to the server before navigating',async()=>{
  let saved,uploads=0;const app=await setup('mi-perfil',{overrides:{uploadAvatar:async()=>{uploads++;return 'https://storage.example/profile.jpg';},saveProfile:async value=>{saved=structuredClone(value);}}});
- const values={profileName:'Ana Artesana',profileCity:'Lambayeque',profileSpecialty:'Tejido',profileBio:'Mi historia',profileStory:'Mi oficio',profileWhatsapp:'999999999',profileExperience:'10 años',profileFair:'Feria local',profileVideo:'https://youtube.com/watch?v=abcdefghijk',facebook:'https://facebook.com/ana',instagram:'https://instagram.com/ana',youtube:'https://youtube.com/@ana',tiktok:'https://tiktok.com/@ana'};
+ const values={profileName:'Ana Artesana',profileCity:'Lambayeque',profileSpecialty:'Tejido',profileBio:'Mi historia',profileStory:'Mi oficio',profileWhatsapp:'999999999',profileExperience:'10',profileFair:'Feria local',profileVideo:'https://youtube.com/watch?v=abcdefghijk',facebook:'https://facebook.com/ana',instagram:'https://instagram.com/ana',youtube:'https://youtube.com/@ana',tiktok:'https://tiktok.com/@ana'};
  for(const [id,value] of Object.entries(values))app.document.getElementById(id).value=value;
  Object.defineProperty(app.document.getElementById('profileAvatar'),'files',{value:[{name:'foto.jpg'}]});
  const form=app.document.getElementById('profileForm');await form.onsubmit({preventDefault(){},currentTarget:form});
@@ -115,9 +117,8 @@ test('private editor reopens every photo and keeps the selected main photo acros
  const reopened=await setup('nuevo',{search:'?editar=p-gallery',rows});assert.equal(reopened.document.querySelector('#imagePreview img').src,photos[2]);assert.equal(reopened.document.querySelectorAll('#galleryEditor img').length,3);
 });
 
-test('an older database keeps the additional photo control disabled while draft saving still works',async()=>{
- const app=await setup('nuevo',{overrides:{galleryEnabled:false}});assert.equal(app.document.getElementById('galleryPhoto').disabled,true);assert.match(app.document.getElementById('app').textContent,/galería ampliada aún no está activa/);
- app.input('prodName','Mi creación');await app.submit();assert.equal(app.rows.length,1);assert.match(app.document.getElementById('saveStatus').textContent,/Borrador guardado/);
+test('a database without extra gallery support still offers the principal photo and draft saving',async()=>{
+ const app=await setup('nuevo',{overrides:{galleryEnabled:false}});assert.equal(app.document.getElementById('galleryPhoto').disabled,false);assert.match(app.document.getElementById('photosTitle').textContent,/hasta 1/);app.input('prodName','Mi creación');await app.submit();assert.equal(app.rows.length,1);
 });
 
 test('missing profiles redirect before product fields or uploads are available',async()=>{
@@ -137,10 +138,9 @@ test('saving the prerequisite profile continues to the product form only after t
  app.document.getElementById('profileName').value='Ana real';const form=app.document.getElementById('profileForm');await form.onsubmit({preventDefault(){},currentTarget:form});assert.equal(app.location.href,'nuevo.html?crear=1');
 });
 
-test('social generation and regeneration are both marked as AI and successful text remains editable',async()=>{
- const rows=[{id:'p1',name:'Bolso',artisan:'Ana',published:true,img:'https://storage.example/a/photo.jpg'}];const app=await setup('difusion',{rows,overrides:{generateDescription:async()=> 'Texto social generado para revisar'}});
- assert.match(app.document.querySelector('#generateSocial .ai-mark').textContent,/IA/);assert.match(app.document.querySelector('#retrySocial .ai-mark').textContent,/IA/);
- app.document.getElementById('shareProduct').value='p1';app.document.getElementById('shareChannel').value='facebook';await app.document.getElementById('generateSocial').onclick();assert.equal(app.document.getElementById('socialOrigin').hidden,false);assert.equal(app.document.getElementById('socialPreview').value,'Texto social generado para revisar');assert.equal(app.document.getElementById('shareNative').disabled,true);
+test('promotion generates into a comparison and only accepts after an explicit click',async()=>{
+ const rows=[{id:'p1',name:'Bolso',artisan:'Ana',published:true,img:'https://storage.example/a/photo.jpg'}];const app=await setup('difusion',{rows,overrides:{generateDescription:async()=> 'Texto social generado para revisar'}}),doc=app.document;
+ doc.getElementById('shareProduct').value='p1';doc.getElementById('shareChannel').value='facebook';await doc.getElementById('generateSocial').onclick();assert.equal(doc.getElementById('socialPreview').value,'');assert.equal(doc.getElementById('shareNative').disabled,true);assert.equal(doc.querySelector('.text-comparison').hidden,false);doc.querySelector('.text-comparison button').onclick();assert.equal(doc.getElementById('socialPreview').value,'Texto social generado para revisar');assert.equal(doc.getElementById('shareNative').disabled,false);
 });
 
 test('an administrative hold remains visible and publishing stays disabled after review',async()=>{
@@ -149,32 +149,20 @@ test('an administrative hold remains visible and publishing stays disabled after
  await app.submit();assert.equal(app.rows[0].published,false);
 });
 
-test('social regeneration prevents simultaneous requests and never approves a generated result automatically',async()=>{
- const pending=deferred();let calls=0;const rows=[{id:'p1',name:'Bolso',published:true,img:'https://storage.example/front.jpg'}];
- const app=await setup('difusion',{rows,overrides:{generateDescription:()=>{calls++;return pending.promise;}}});app.document.getElementById('shareProduct').value='p1';app.document.getElementById('shareChannel').value='facebook';
- const first=app.document.getElementById('generateSocial').onclick();await app.document.getElementById('retrySocial').onclick();assert.equal(calls,1);assert.equal(app.document.getElementById('shareProduct').disabled,true);
- pending.resolve('Texto generado');await first;assert.equal(app.document.getElementById('shareProduct').disabled,false);assert.equal(app.document.getElementById('approveSocial').disabled,false);assert.equal(app.document.getElementById('shareNative').disabled,true);
+test('promotion serializes requests and ignores proposals after changing the selected network',async()=>{
+ const pending=deferred();let calls=0;const rows=[{id:'p1',name:'Bolso',published:true,img:'https://storage.example/front.jpg'}];const app=await setup('difusion',{rows,overrides:{generateDescription:()=>{calls++;return pending.promise;}}}),doc=app.document;doc.getElementById('shareProduct').value='p1';doc.getElementById('shareChannel').value='facebook';
+ const first=doc.getElementById('generateSocial').onclick();await tick();await doc.getElementById('retrySocial').onclick();assert.equal(calls,1);doc.getElementById('shareChannel').value='instagram';pending.resolve('Texto generado');await first;assert.equal(doc.getElementById('socialPreview').value,'');assert.equal(doc.querySelector('.text-comparison').hidden,true);
 });
 
-test('wizard navigation keeps the same controls and values without saving or generating',async()=>{
- let generations=0;const app=await setup('nuevo',{overrides:{generateDescription:async()=>{generations++;return 'Texto';}}});
- const {document}=app,name=document.getElementById('prodName'),description=document.getElementById('approveTextArea');
- app.input('prodName','Bolso <artesanal>');app.input('prodMaterial','Algodón');app.input('prodPrice','0');app.input('approveTextArea','Una historia escrita por mí.');
- assert.equal(document.getElementById('editorStep0').hidden,false);
- for(let step=1;step<4;step++){document.getElementById('editorNext').onclick();assert.equal(document.getElementById('editorStep'+step).hidden,false);assert.equal(document.querySelectorAll('[data-editor-panel]:not([hidden])').length,1);}
- assert.equal(document.getElementById('prodName'),name);assert.equal(document.getElementById('approveTextArea'),description);
- const review=document.getElementById('productReview');assert.match(review.textContent,/Bolso <artesanal>/);assert.equal(review.querySelector('artesanal'),null);assert.match(review.textContent,/S\/ 0/);assert.match(review.textContent,/Una historia escrita por mí/);
- assert.equal(document.getElementById('publishProduct').disabled,true);assert.equal(app.calls.filter(call=>call[0]==='save').length,0);assert.equal(generations,0);
- document.querySelector('[data-editor-step="0"]').onclick();assert.equal(name.value,'Bolso <artesanal>');assert.equal(description.value,'Una historia escrita por mí.');
- await app.submit();assert.equal(app.rows.length,1);assert.equal(app.rows[0].published,false);assert.equal(app.rows[0].price,'0');
+test('essential fields are visible together, optional details stay accessible without saving or generating',async()=>{
+ let generations=0;const app=await setup('nuevo',{overrides:{generateDescription:async()=>{generations++;return 'Texto';}}});const doc=app.document;
+ for(const id of ['prodName','prodCategory','prodPrice','prodMaterial','approveTextArea'])assert.equal(doc.getElementById(id).closest('details,[hidden]'),null);
+ assert.equal(doc.getElementById('moreDetails').hasAttribute('open'),false);assert.ok(doc.getElementById('prodDim').closest('#moreDetails'));assert.equal(doc.querySelectorAll('#galleryEditor>li').length,3);
+ app.input('prodName','Bolso');app.input('prodMaterial','Algodón');app.input('approveTextArea','Una historia');app.input('prodPrice','0');await app.submit();assert.equal(app.rows[0].price,'0');assert.equal(app.rows[0].published,false);assert.equal(generations,0);
 });
 
-test('wizard cannot navigate during a pending save and review reflects revised approvals',async()=>{
- const pending=deferred();const app=await setup('nuevo',{overrides:{saveProduct:()=>pending.promise}});app.input('prodName','Producto');app.input('approveTextArea','Texto');
- app.document.querySelector('[data-editor-step="3"]').onclick();app.document.getElementById('approveText').onclick();assert.match(app.document.getElementById('productReview').textContent,/Descripción aprobada/);
- app.input('approveTextArea','Nueva descripción');assert.match(app.document.getElementById('productReview').textContent,/Descripción pendiente/);
- const request=app.submit();app.document.querySelector('[data-editor-step="0"]').onclick();assert.equal(app.document.getElementById('editorStep3').hidden,false);
- pending.reject(Error('Sin conexión'));await request;assert.match(app.document.getElementById('saveStatus').textContent,/Sin conexión/);assert.equal(app.document.getElementById('approveTextArea').value,'Nueva descripción');
+test('publishing reveals a clear missing material error without hiding the required field',async()=>{
+ const app=await setup('nuevo');app.input('prodName','Aretes');app.input('approveTextArea','Unos aretes');await app.document.getElementById('publishProduct').onclick();assert.equal(app.rows.length,0);assert.match(app.document.getElementById('saveStatus').textContent,/materiales/);assert.equal(app.document.getElementById('prodMaterial').closest('details'),null);
 });
 
 test('every artisan page exposes the existing sign-out action through its private menu',async()=>{
@@ -184,27 +172,28 @@ test('every artisan page exposes the existing sign-out action through its privat
 test('dictated product text invalidates approval and persists through the existing save operation',async()=>{
  const rows=[{id:'p1',name:'Pieza',material:'Algodón',img:'https://storage.example/front.jpg',photos:[],story:'Historia original.',published:false}];
  const app=await setup('nuevo',{search:'?editar=p1',rows,voice:true}),doc=app.document;
- doc.querySelector('[data-editor-step="2"]').onclick();await tick();doc.getElementById('approveImage').onclick();doc.getElementById('approveText').onclick();assert.equal(doc.getElementById('publishProduct').disabled,false);
+ await tick();doc.getElementById('approveImage').onclick();doc.getElementById('approveText').onclick();assert.equal(doc.getElementById('publishProduct').disabled,false);
  doc.getElementById('approveTextArea').nextElementSibling.querySelector('button').onclick();const recognition=app.recordings[0];recognition.onstart();
  recognition.onresult({resultIndex:0,results:[Object.assign([{transcript:'Tejida en mi taller.'}],{isFinal:true})]});
- assert.equal(doc.getElementById('publishProduct').disabled,true);assert.match(doc.getElementById('approveTextArea').value,/Historia original\. Tejida en mi taller\./);
+ assert.equal(doc.getElementById('publishProduct').disabled,false);assert.match(doc.getElementById('approveTextArea').value,/Historia original\. Tejida en mi taller\./);
  app.window.khipuVoice.cancel();doc.getElementById('approveText').onclick();await app.submit();assert.equal(rows[0].story,'Historia original. Tejida en mi taller.');assert.equal(rows[0].published,false);
 });
 
-test('dictation in promotion invalidates sharing approval and never invokes generation',async()=>{
+test('dictation in promotion keeps direct sharing available and never invokes generation',async()=>{
  let generations=0;const app=await setup('difusion',{voice:true,rows:[{id:'p1',name:'Bolso',published:true,img:'https://storage.example/front.jpg'}],overrides:{generateDescription:async()=>{generations++;return 'Texto';}}});
  const preview=app.document.getElementById('socialPreview');
  // Linkedom does not dispatch DOM oninput properties; bridge the existing native handler.
  preview.addEventListener('input',()=>preview.oninput());
  preview.value='Texto para compartir.';preview.oninput();app.document.getElementById('approveSocial').onclick();assert.equal(app.document.getElementById('shareNative').disabled,false);
  preview.nextElementSibling.querySelector('button').onclick();app.recordings[0].onresult({resultIndex:0,results:[Object.assign([{transcript:'Consulta colores.'}],{isFinal:true})]});
- assert.equal(app.document.getElementById('shareNative').disabled,true);assert.equal(generations,0);assert.equal(preview.value,'Texto para compartir. Consulta colores.');
+ assert.equal(app.document.getElementById('shareNative').disabled,false);assert.equal(generations,0);assert.equal(preview.value,'Texto para compartir. Consulta colores.');
  app.window.khipuVoice.cancel();
 });
 
 test('dictated profile history is included in the existing explicit profile save',async()=>{
  let saved;const app=await setup('mi-perfil',{voice:true,overrides:{saveProfile:async value=>saved=structuredClone(value)}});
  for(const [id,text] of [['profileBio','Soy artesana de Lambayeque.'],['profileStory','Comparto mi oficio.']]){
+  app.document.getElementById(id).closest('details').setAttribute('open','');await tick();
   const target=app.document.getElementById(id);target.value='';target.nextElementSibling.querySelector('button').onclick();
   app.recordings.at(-1).onresult({resultIndex:0,results:[Object.assign([{transcript:text}],{isFinal:true})]});
  }
@@ -220,4 +209,32 @@ test('Mi plan is a protected workspace route and does not fetch the product edit
 test('public plan comparison remains usable without waiting for authentication',async()=>{
  const app=await setup('planes',{overrides:{init:async()=>{throw Error('No Auth dependency');},planPublic:async()=>({available:false})}});
  assert.match(app.document.querySelector('h1').textContent,/Planes para tu taller/);assert.match(app.document.getElementById('planComparison').textContent,/Precio por confirmar/);assert.ok(app.document.querySelector('a[href="mi-plan.html"]'));
+});
+
+test('profile fields, plan and security remain accessible in separate groups without losing stored values',async()=>{
+ const app=await setup('mi-perfil'),doc=app.document;
+ for(const [id,title] of [['profileName','Mis datos'],['profileBio','Mi historia'],['profileWhatsapp','Mis redes'],['profileVideo','Mis redes']])assert.equal(doc.getElementById(id).closest('details').querySelector('summary').textContent,title);
+ assert.equal(doc.getElementById('accountSecurity').closest('details').querySelector('summary').textContent,'Seguridad y contraseña');assert.ok(doc.querySelector('a[href="mi-plan.html"]'));assert.equal(doc.querySelector('#profileForm>details').open,true);
+});
+
+test('product text generation compares first and marks accepted AI text without autosaving',async()=>{
+ const app=await setup('nuevo',{overrides:{generateDescription:async()=> 'Descripción comercial'}}),doc=app.document;app.input('prodName','Aretes');app.input('prodMaterial','Hilo');app.input('approveTextArea','');await doc.querySelector('.description-field .text-assist>button').onclick();assert.equal(doc.getElementById('approveTextArea').value,'');assert.equal(app.calls.filter(x=>x[0]==='save').length,0);doc.querySelector('.description-field .text-comparison button').onclick();assert.equal(doc.getElementById('approveTextArea').value,'Descripción comercial');assert.equal(doc.getElementById('textOrigin').hidden,false);
+});
+
+test('Enter in a product field never implicitly hides a published product',async()=>{
+ const app=await setup('nuevo',{search:'?editar=p',rows:[{id:'p',name:'Aretes',published:true,img:'https://storage.example/photo.jpg',material:'Hilo',story:'Mi pieza'}]}),input=app.document.getElementById('prodName'),event=new app.document.defaultView.Event('keydown',{bubbles:true,cancelable:true});Object.defineProperty(event,'key',{value:'Enter'});input.dispatchEvent(event);assert.equal(event.defaultPrevented,true);assert.equal(app.calls.filter(x=>x[0]==='save').length,0);
+});
+
+test('experience is chosen as years, restores previous values and saves the public number-and-years label',async()=>{
+ for(const [previous,chosen,expected] of [['12 años creando','25','25 años'],['1 año de experiencia','1','1 año'],['','0','0 años']]){
+  let saved;const app=await setup('mi-perfil',{overrides:{myProfile:async()=>({name:'Ana',experience:previous}),saveProfile:async value=>{saved=structuredClone(value);}}}),select=app.document.getElementById('profileExperience');
+  assert.equal(select.tagName,'SELECT');assert.equal(select.value,previous.startsWith('12')?'12':previous.startsWith('1')?'1':'');assert.equal(app.document.getElementById('profileExperienceVoiceStatus'),null);
+  select.value=chosen;const form=app.document.getElementById('profileForm');await form.onsubmit({preventDefault(){},currentTarget:form});assert.equal(saved.experience,expected);
+  const publicPage=await setup('artesana',{search:'?nombre=Ana',overrides:{list:async()=>({products:[],profiles:[saved],reviews:[]})}});assert.match(publicPage.document.querySelector('.surface').textContent,new RegExp(expected));
+ }
+});
+
+test('experience legacy text is preserved until a number is chosen, and public numeric history is formatted',async()=>{
+ let saved;const app=await setup('mi-perfil',{overrides:{myProfile:async()=>({name:'Ana',experience:'Desde niña'}),saveProfile:async value=>{saved=value;}}}),select=app.document.getElementById('profileExperience');assert.equal(select.value,'Desde niña');const form=app.document.getElementById('profileForm');await form.onsubmit({preventDefault(){},currentTarget:form});assert.equal(saved.experience,'Desde niña');
+ const publicPage=await setup('artesanas',{overrides:{list:async()=>({products:[],profiles:[{name:'Ana',experience:'18 años creando'}],reviews:[]})}});assert.ok([...publicPage.document.querySelectorAll('.tag')].some(tag=>tag.textContent==='18 años'));assert.doesNotMatch(publicPage.document.getElementById('app').textContent,/18 años creando/);
 });

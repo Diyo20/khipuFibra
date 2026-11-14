@@ -18,12 +18,17 @@ function setup({supported=true,prefixed=false,secure=true,throws=false}={}){
  const root=document.getElementById('root');window.khipuVoice.mount(root);
  const target=id=>document.getElementById(id),box=id=>target(id).nextElementSibling,button=id=>box(id).querySelector('button');
  const result=(recognition,entries,resultIndex=0)=>recognition.onresult({resultIndex,results:entries.map(([transcript,isFinal=true])=>Object.assign([{transcript}],{isFinal}))});
- return {window,document,root,instances,target,box,button,result,listeners,timers,Event:dom.window.Event};
+ const status=id=>document.getElementById(id+'VoiceStatus'),feedback=id=>status(id).parentElement;
+ return {window,document,root,instances,target,box,button,status,feedback,result,listeners,timers,Event:dom.window.Event};
 }
+
+test('closing optional details stops the microphone and rejects late words',async()=>{
+ const app=setup(),target=app.target('profileBio'),box=app.box('profileBio'),details=app.document.createElement('details');details.setAttribute('open','');target.before(details);details.append(target,box,app.feedback('profileBio'));await tick();app.button('profileBio').onclick();const run=app.instances.at(-1);run.onstart();details.removeAttribute('open');await tick();assert.equal(run.aborts,1);app.result(run,[['Palabras tardías']]);assert.equal(target.value,'');
+});
 test('controls never request the microphone before a click and unsupported or insecure browsers keep editable fields',()=>{
  for(const options of [{supported:false},{secure:false}]){
   const app=setup(options);assert.equal(app.instances.length,0);assert.equal(app.target('profileBio').disabled,false);
-  assert.equal(app.button('profileBio').disabled,true);assert.match(app.box('profileBio').textContent,/Puedes escribir/);
+  assert.equal(app.button('profileBio').disabled,true);assert.match(app.status('profileBio').textContent,/Puedes escribir/);
  }
  const app=setup({prefixed:true});assert.equal(app.instances.length,0);assert.equal(app.button('approveTextArea').getAttribute('aria-controls'),'approveTextArea');
  app.button('approveTextArea').onclick();assert.equal(app.instances[0].starts,1);assert.equal(app.instances[0].lang,'es-PE');
@@ -45,7 +50,7 @@ test('permission, network and start errors preserve the field and never restart 
   const app=setup();app.button('approveTextArea').onclick();const run=app.instances[0];run.onerror({error});run.onend();
   assert.equal(app.target('approveTextArea').value,'Texto escrito.');assert.equal(run.starts,1);assert.equal(run.aborts,1);assert.equal(app.button('approveTextArea').getAttribute('aria-pressed'),'false');
  }
- const app=setup({throws:true});app.button('profileBio').onclick();assert.match(app.box('profileBio').textContent,/No se pudo iniciar/);
+ const app=setup({throws:true});app.button('profileBio').onclick();assert.match(app.status('profileBio').textContent,/No se pudo iniciar/);
 });
 test('switching fields, signing out or leaving the page discards late results',()=>{
  const app=setup();app.button('profileBio').onclick();const old=app.instances[0];old.onstart();
@@ -68,5 +73,9 @@ test('saving, changing context or remounting stops dictation without sending aud
 });
 test('length limits preserve the existing text and stop rather than truncating speech silently',()=>{
  const app=setup();app.target('profileBio').setAttribute('maxlength','5');app.button('profileBio').onclick();const run=app.instances[0];app.result(run,[['Frase demasiado larga']]);
- assert.equal(app.target('profileBio').value,'');assert.equal(run.aborts,1);assert.match(app.box('profileBio').textContent,/supera el límite/);
+ assert.equal(app.target('profileBio').value,'');assert.equal(run.aborts,1);assert.match(app.status('profileBio').textContent,/supera el límite/);
+});
+
+test('voice status stays outside the control and action names follow the dictation state',()=>{
+ const app=setup(),button=app.button('approveTextArea');assert.equal(app.box('approveTextArea').contains(app.status('approveTextArea')),false);assert.equal(button.getAttribute('aria-label'),'Hablar: Descripción');button.onclick();assert.equal(button.textContent,'Cancelar');assert.equal(button.getAttribute('aria-label'),'Cancelar: Descripción');const run=app.instances[0];run.onstart();assert.equal(button.textContent,'Detener');assert.equal(app.status('approveTextArea').textContent,'Escuchando…');run.onend();assert.equal(button.textContent,'Hablar');
 });

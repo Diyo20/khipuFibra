@@ -7,7 +7,7 @@ const signature=c=>JSON.stringify(c);
 const disable=(button,value)=>{value=Boolean(value);if(button.disabled!==value)button.disabled=value;};
 const editable=t=>t.isConnected&&!t.disabled&&!t.readOnly&&!t.closest('[hidden],fieldset[disabled]');
 const element=(tag,text,cls)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(cls)e.className=cls;return e;};
-const quotaText=q=>q?`${q.plan==='pro'?'Khipu Pro':'Khipu Básico'} · ${q.used} de ${q.limit} intentos utilizados · ${q.remaining} disponibles · mes: ${q.monthlyUsed}/${q.monthlyLimit}`:'Los intentos se comprobarán en tu cuenta antes de generar.';
+const quotaText=q=>q?`${q.remaining} disponibles`:'Según tu plan';
 function attach(target){
  const c=context(target);if(!c||items.has(target)||target.closest('[data-writing-ui]'))return;
  const box=element('section',null,'text-assist');box.setAttribute('data-writing-ui','ai');
@@ -21,32 +21,33 @@ function attach(target){
  [accept,retry,keep].forEach(b=>b.type='button');actions.append(accept,retry,keep);compare.append(actions);
  box.append(improve,quota,status,compare);(target.nextElementSibling?.classList.contains('voice-input')?target.nextElementSibling:target).after(box);
  const item={target,box,improve,quota,status,compare,original,proposal,accept,retry,keep,working:false,session:null,budget:null,epoch:0};items.set(target,item);
- const sync=()=>{disable(improve,item.working||!editable(target)||!target.value.trim());disable(accept,item.working||!editable(target)||!proposal.value);disable(retry,item.working||!editable(target)||!item.session||!item.budget||item.budget.remaining<=0);disable(keep,item.working);};item.sync=sync;
- const generate=async(again=false)=>{
+ const sync=()=>{disable(improve,item.working||!editable(target)||(!target.value.trim()&&!target.khipuGenerate));disable(accept,item.working||!editable(target)||!proposal.value);disable(retry,item.working||!editable(target)||!item.session||!item.budget||item.budget.remaining<=0);disable(keep,item.working);};item.sync=sync;
+ const generate=async(again=false,forced=null)=>{
   if(item.working||!editable(target))return;const cloud=window.khipuCloud;
-  if(!cloud?.improveText||!cloud?.aiQuota){status.textContent='La mejora con IA está pendiente de activación.';return;}
-  if(!again){item.session={source:target.value,context:context(target)};original.value=target.value;proposal.value='';}
+  if(!cloud?.improveText||!cloud?.aiQuota){status.textContent='No se pudo iniciar la mejora de texto. Actualiza la página y vuelve a intentarlo.';return;}
+  if(!again){const generation=forced||(!target.value.trim()&&target.khipuGenerate?target.khipuGenerate():null);if(generation?.error){status.textContent=generation.error;return;}item.session={source:target.value,context:context(target),generation};original.value=target.value;proposal.value='';}
   const session=item.session,epoch=++item.epoch;if(!session)return;
   item.working=true;window.khipuVoice?.cancel();status.textContent='Comprobando intentos…';sync();
   try{
-   item.budget=await cloud.aiQuota(tool(session.context),session.context.entity);quota.textContent=quotaText(item.budget);
+   const selectedTool=session.generation?(session.generation.kind==='producto'?'generate_product':'generate_social_'+session.context.network):tool(session.context);
+   item.budget=await cloud.aiQuota(selectedTool,session.context.entity);quota.textContent=quotaText(item.budget);
    if(epoch!==item.epoch||!target.isConnected||signature(context(target))!==signature(session.context))return;
    if(item.budget.remaining<=0)throw Error('Alcanzaste el límite de intentos. Puedes conservar y editar tu original.');
    status.textContent='Preparando una propuesta. Tu original se conserva.';
-   const answer=await cloud.improveText({...session.context,source:session.source});
+   const answer=session.generation?{text:await cloud.generateDescription({...session.generation,previous:proposal.value}),quota:await cloud.aiQuota(selectedTool,session.context.entity).catch(()=>null)}:await cloud.improveText({...session.context,source:session.source});
    if(epoch!==item.epoch||!target.isConnected)return;
    if(signature(context(target))!==signature(session.context))throw Error('Cambió el contenido seleccionado. Inicia una nueva comparación.');
-   item.budget=answer.quota;quota.textContent=quotaText(item.budget);proposal.value=answer.text;compare.hidden=false;status.textContent='Compara la propuesta con tu original. Aceptar no guarda ni publica.';
+   item.budget=answer.quota;quota.textContent=quotaText(item.budget);proposal.value=answer.text;compare.hidden=false;status.textContent='Revisa la propuesta antes de aceptar.';
   }catch(error){if(epoch===item.epoch&&target.isConnected){if(error.quota)item.budget=error.quota;quota.textContent=quotaText(item.budget);status.textContent=error.message;}}
   finally{if(epoch===item.epoch){item.working=false;sync();}}
  };
- improve.onclick=()=>generate(false);retry.onclick=()=>generate(true);
+ item.generate=generate;improve.onclick=()=>generate(false);retry.onclick=()=>generate(true);
  keep.onclick=()=>{compare.hidden=true;proposal.value='';item.session=null;status.textContent='Propuesta descartada. El texto del formulario se conserva.';sync();};
  accept.onclick=()=>{
   if(item.working||!editable(target)||!item.session)return;
   if(target.value!==item.session.source||signature(context(target))!==signature(item.session.context)){status.textContent='El original o el contexto cambió. Conserva tus cambios e inicia una nueva comparación.';return;}
   const limit=Number(target.getAttribute('maxlength'));if(limit>0&&proposal.value.length>limit){status.textContent='La propuesta supera el límite del campo. Conserva el original o solicita otra versión.';return;}
-  target.value=proposal.value;target.dispatchEvent(new Event('input',{bubbles:true}));compare.hidden=true;item.session=null;status.textContent='Propuesta aceptada. Puedes editarla y revisarla antes de guardar.';sync();
+  target.value=proposal.value;target.dispatchEvent(new Event('input',{bubbles:true}));target.dispatchEvent(new Event('khipu:ai-accepted',{bubbles:true}));const origin=document.getElementById(target.id==='socialPreview'?'socialOrigin':target.id==='approveTextArea'?'textOrigin':'');if(origin)origin.hidden=false;compare.hidden=true;item.session=null;status.textContent='Texto aceptado. Puedes editarlo.';sync();
  };
  target.addEventListener('input',sync);sync();
 }
@@ -68,6 +69,6 @@ function mount(root=document){
  if(!observer&&typeof MutationObserver==='function'){observer=new MutationObserver(()=>mount());observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','readonly','hidden']});}
 }
 window.addEventListener('khipu:auth-change',()=>{items.forEach(item=>{item.epoch++;item.session=null;item.proposal.value='';item.original.value='';item.compare.hidden=true;item.working=false;item.sync();});});
-window.khipuTextAssist={mount};
+window.khipuTextAssist={mount,propose:(target,payload)=>{mount();return items.get(target)?.generate(false,payload);}};
 if(document.body)mount();else document.addEventListener('DOMContentLoaded',()=>mount(),{once:true});
 })();

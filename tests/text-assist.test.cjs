@@ -39,3 +39,11 @@ test('repeated clicks during a pending improvement send one request and late res
  let resolve;const pending=new Promise(yes=>resolve=yes),app=setup({pending});const first=app.buttons()[0].onclick();await tick();await app.buttons()[0].onclick();assert.equal(app.calls.length,1);
  app.listeners['khipu:auth-change']();resolve();await first;assert.equal(app.box.querySelector('.text-comparison').hidden,true);assert.equal(app.target.value,'texto dicho por mi.');
 });
+
+test('empty descriptions generate and redo from the same facts without overwriting until acceptance',async()=>{
+ const app=setup();app.target.value='';let description='Apuntes originales',used=0;const generations=[];
+ app.target.khipuGenerate=()=>({kind:'producto',entity:null,product:{name:'Aretes',material:'Hilo',story:description}});
+ app.window.khipuCloud.generateDescription=async payload=>{generations.push(payload);used++;return 'Propuesta comercial '+used;};app.window.khipuCloud.aiQuota=async()=>({remaining:2-used});app.window.khipuTextAssist.mount();
+ assert.equal(app.buttons()[0].disabled,false);await app.buttons()[0].onclick();assert.equal(app.target.value,'');assert.equal(generations[0].kind,'producto');
+ description='Otros datos';await app.buttons()[2].onclick();assert.equal(generations[1].product.story,'Apuntes originales');assert.equal(app.buttons()[2].disabled,true);app.buttons()[1].onclick();assert.equal(app.target.value,'Propuesta comercial 2');
+});
