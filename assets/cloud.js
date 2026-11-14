@@ -101,7 +101,29 @@ async function setProductStock(id,stock){self();if(!['Disponible','Por pedido','
 async function duplicateProduct(id){const p=await ownedProduct(id);delete p.id;delete p.created_at;p.name=(p.name+' (copia)').slice(0,120);p.publicado=false;const r=await api.from('productos').insert(p).select('id').single();fail(r.error);return r.data.id;}
 async function deleteProduct(id){self();const r=await api.from('productos').delete().eq('id',id).eq('owner_id',currentUser.id).select('id').single();fail(r.error);return r.data;}
 async function sendReview(v){if(!enabled)return;let r=await api.from('valoraciones').insert({kind:v.kind,target:String(v.target),nombre:v.name,comentario:v.comment,estrellas:v.score,aprobada:false});fail(r.error);}
-async function generateDescription(payload){self();let {data,error}=await api.functions.invoke('generar-descripcion',{body:payload});fail(error);if(data?.error)throw Error(data.error);if(!data?.text)throw Error('Sin respuesta de IA');return data.text;}
+async function textResult(payload){requireApi();if(!currentUser)throw Error('Inicia sesión para usar la mejora de texto.');const {data,error}=await api.functions.invoke('generar-descripcion',{body:payload});let detail=data;if(error){try{detail=await error.context?.json();}catch{}const problem=Error(detail?.error||'La IA no está disponible. Tu texto se conserva.');problem.quota=detail?.quota;throw problem;}if(data?.error){const problem=Error(data.error);problem.quota=data.quota;throw problem;}if(!data?.text)throw Error('Sin respuesta de IA');return data;}
+async function generateDescription(payload){return (await textResult(payload)).text;}
+async function improveText(payload){return textResult({kind:'mejora',...payload});}
+  async function improvePhoto(payload){self();const owner=currentUser.id;const {data,error}=await api.functions.invoke('mejorar-foto',{body:payload});if(currentUser?.id!==owner)throw Error('La sesión cambió. Vuelve a entrar.');let detail=data;if(error){try{detail=await error.context?.json();}catch{}throw Error(detail?.error||'No se pudo editar la foto. El original se conserva.');}if(data?.error)throw Error(data.error);if(!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/.test(data?.image||''))throw Error('La IA no devolvió una fotografía válida.');return data;}
+async function aiQuota(tool,entity=null){requireApi();const r=await api.rpc('khipu_ai_quota',{p_tool:tool,p_entity:entity});if(r.error?.code==='PGRST202')throw Error('Las cuotas y la mejora de IA están pendientes de activación.');fail(r.error);return r.data;}
+async function aiSettings(plan=null,content=null,month=null){requireApi();const r=await api.rpc('khipu_ai_settings',{p_plan:plan,p_content:content,p_month:month});fail(r.error);return r.data;}
+async function planRpc(name,args={}){requireApi();const r=await api.rpc(name,args);if(r.error?.code==='PGRST202')return {available:false};if(r.error?.code==='23505')throw Error('La solicitud o la referencia de pago ya está registrada. Actualiza la lista antes de continuar.');fail(r.error);return r.data;}
+const planPublic=()=>planRpc('khipu_plan_public');
+const planMine=()=>{self();return planRpc('khipu_plan_my');};
+const planAdmin=()=>planRpc('khipu_plan_admin');
+const planSubmit=(reference,proof,price)=>{self();return planRpc('khipu_plan_submit',{p_reference:reference,p_proof:proof||null,p_price:price});};
+const planConfigure=values=>planRpc('khipu_plan_config',values);
+const planDecide=values=>planRpc('khipu_plan_decide',values);
+const planAdjust=values=>planRpc('khipu_plan_adjust',values);
+const planQR=path=>path?api?.storage.from('plan-qr').getPublicUrl(path).data.publicUrl:'';
+async function planUpload(file,kind='proof'){
+ requireApi();if(kind==='qr'){if(membership?.role!=='admin'||membership?.status!=='active')throw Error('Administración requerida.');}else self();
+ if(!currentUser||!['image/png','image/jpeg','image/webp'].includes(file?.type)||!file.size||file.size>5*1024*1024)throw Error('Selecciona una imagen PNG, JPG o WebP de hasta 5 MB.');
+ const owner=currentUser.id,ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg',path=owner+'/'+crypto.randomUUID()+'.'+ext;
+ const r=await api.storage.from(kind==='qr'?'plan-qr':'plan-proofs').upload(path,file,{contentType:file.type,upsert:false});fail(r.error);
+ if(currentUser?.id!==owner)throw Error('Tu cuenta cambió. Vuelve a abrir el formulario.');return path;
+}
+async function planProof(path){requireApi();if(!currentUser)throw Error('Inicia sesión.');const r=await api.storage.from('plan-proofs').createSignedUrl(path,300,{download:true});fail(r.error);return r.data.signedUrl;}
 async function login(){if(!enabled)throw Error('Conecta Supabase antes de acceder con Google.');const url=new URL('acceso.html',location.href).href;let {error}=await api.auth.signInWithOAuth({provider:'google',options:{redirectTo:url}});fail(error);}
 function requireApi(){if(!api)throw Error('El acceso todavía no está configurado. Contacta a khipuFibra.');}
 async function authSettings(){if(!enabled)return null;try{const r=await fetch(new URL('/auth/v1/settings',cfg.supabaseUrl),{headers:{apikey:cfg.supabasePublishableKey}});if(!r.ok)return null;const settings=await r.json();return {google:settings.external?.google===true,email:settings.external?.email===true};}catch{return null;}}
@@ -118,5 +140,5 @@ async function moderateCommerce(kind,id,action,reason){requireApi();const r=awai
 async function manageMember(userId,action){requireApi();const r=await api.rpc('khipu_manage_member',{target_user:userId,action});fail(r.error);return r.data;}
 async function inviteArtisan(email){requireApi();const r=await api.functions.invoke('admin-invite',{body:{email:email.trim()}});if(r.error){let detail;try{detail=await r.error.context?.json();}catch{}throw Error(detail?.error||'No se pudo enviar la invitación. Revisa tu conexión o vuelve a entrar a tu cuenta.');}if(r.data?.error)throw Error(r.data.error);return r.data;}
 async function revokeInvitation(invitationId){requireApi();const r=await api.rpc('khipu_revoke_invitation',{invitation_id:invitationId});fail(r.error);}
-window.khipuCloud={enabled,authLinkError,init,list,myProfile,myProducts,saveProfile,uploadAvatar,saveProduct,setProductPublished,setProductStock,duplicateProduct,deleteProduct,sendReview,generateDescription,login,loginWithPassword,requestAccount,recoverPassword,updatePassword,reauthenticate,accountSecurity,authSettings,logout,clearPrivate,adminData,adminCommerce,moderateCommerce,manageMember,inviteArtisan,revokeInvitation,get galleryEnabled(){return gallerySupport===true},get approved(){return approved},get membership(){return membership},get user(){return currentUser},get client(){return api}};
+window.khipuCloud={enabled,authLinkError,init,list,myProfile,myProducts,saveProfile,uploadAvatar,saveProduct,setProductPublished,setProductStock,duplicateProduct,deleteProduct,sendReview,generateDescription,improveText,improvePhoto,aiQuota,aiSettings,planPublic,planMine,planAdmin,planSubmit,planConfigure,planDecide,planAdjust,planQR,planUpload,planProof,login,loginWithPassword,requestAccount,recoverPassword,updatePassword,reauthenticate,accountSecurity,authSettings,logout,clearPrivate,adminData,adminCommerce,moderateCommerce,manageMember,inviteArtisan,revokeInvitation,get galleryEnabled(){return gallerySupport===true},get approved(){return approved},get membership(){return membership},get user(){return currentUser},get client(){return api}};
 })();

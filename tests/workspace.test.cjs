@@ -3,15 +3,17 @@ const {parseHTML}=require('linkedom'),fs=require('node:fs'),vm=require('node:vm'
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const storage=()=>{const data=new Map();return {getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value),removeItem:key=>data.delete(key)};};
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
-async function setup(page,{search='',rows=[],overrides={},wait=true,voice=false}={}){
+async function setup(page,{search='',rows=[],overrides={},wait=true,voice=false,imageOps}={}){
  const dom=parseHTML(fs.readFileSync(path.join(__dirname,'..',page+'.html'),'utf8')),document=dom.document,calls=[];
  const auth={approved:true,user:{id:'a',user_metadata:{}},membership:{role:'artisan',status:'active'}};
  const cloud={enabled:true,...auth,init:async()=>auth,myProfile:async()=>({name:'Ana',whatsapp:'999999999'}),myProducts:async()=>structuredClone(rows),list:async options=>{calls.push(['list',options]);return {products:rows.filter(p=>p.published),profiles:[],reviews:[]};},clearPrivate(){},saveProduct:async(p,options)=>{calls.push(['save',structuredClone(p),options]);const id=p.id||'p-new';const product={...p,id,published:options.published};const i=rows.findIndex(p=>p.id===id);if(i<0)rows.push(product);else rows[i]=product;return {id,imageUrl:p.img,photos:p.photos||[]};},...overrides};
  const location={search,href:'https://preview.example/'+page+'.html'+search,replace:url=>calls.push(['redirect',url]),reload:()=>calls.push(['reload'])};
  const window={khipuCloud:cloud,addEventListener(){},innerWidth:390,confirm:()=>false,history:{replaceState:(a,b,url)=>calls.push(['history',url])}};
  const recordings=[];if(voice)window.SpeechRecognition=class{constructor(){recordings.push(this);}start(){}stop(){}abort(){}};
- const context=vm.createContext({window,document,location,localStorage:storage(),sessionStorage:storage(),structuredClone,URLSearchParams,URL,Event:dom.window.Event,MutationObserver:dom.window.MutationObserver,console:{...console,error(){}},setTimeout:()=>0,clearTimeout(){},Intl});
- for(const file of ['storefront.js','artisan-workspace.js','voice-input.js','app.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets',file),'utf8'),context);
+ const Image=class{constructor(){this.width=800;this.height=600;}set src(value){imageOps?.push(['source',value]);this.onload();}};
+ if(imageOps){const create=document.createElement.bind(document);document.createElement=tag=>{if(tag!=='canvas')return create(tag);const ctx={fillRect(){},save(){},restore(){},translate(){},rotate(angle){imageOps.push(['rotate',angle]);},drawImage(){imageOps.push(['draw',this.filter]);}};return {getContext:()=>ctx,toDataURL:()=>{imageOps.push(['render']);return 'data:image/jpeg;base64,cHJlcGFyZWQ=';}};};}
+ const context=vm.createContext({window,document,location,Image,localStorage:storage(),sessionStorage:storage(),structuredClone,URLSearchParams,URL,Event:dom.window.Event,MutationObserver:dom.window.MutationObserver,console:{...console,error(){}},setTimeout:()=>0,clearTimeout(){},Intl});
+ for(const file of ['storefront.js','artisan-workspace.js','writing-fields.js','voice-input.js','plans.js','app.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets',file),'utf8'),context);
  const configure=()=>{for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{writable:true,configurable:true,value:select.querySelector('option[selected]')?.textContent||select.querySelector('option')?.textContent||''});const form=document.getElementById('productForm');if(form)form.reportValidity=()=>true;};
  if(wait){await tick();configure();}
  return {document,cloud,calls,rows,window,location,configure,recordings,input:(id,value)=>{const input=document.getElementById(id);input.value=value;input.dispatchEvent(new dom.window.Event('input'));},submit:()=>document.getElementById('productForm').onsubmit({preventDefault(){}})};
@@ -26,8 +28,41 @@ test('new editor saves a durable draft, reuses its ID and publishes only after e
  const edit=await setup('nuevo',{search:'?editar=p-new',rows});
  edit.document.getElementById('approveText').onclick();edit.document.getElementById('approveImage').onclick();assert.equal(edit.document.getElementById('publishProduct').disabled,false);
  await edit.document.getElementById('publishProduct').onclick();assert.equal(rows.length,1);assert.equal(rows[0].published,true);
- edit.input('approveTextArea','Cambio pendiente de revisión');assert.equal(edit.document.getElementById('publishProduct').disabled,true);
+ edit.input('approveTextArea','Cambio pendiente de revisión');assert.equal(edit.document.getElementById('publishProduct').disabled,false); // editing a published product no longer repeats the first-publication approvals
 });
+test('local photo adjustments always use the original, invalidate approval, and can be restored before saving',async()=>{
+ const imageOps=[],original='https://storage.example/original.jpg',rows=[{id:'photo',name:'Mi bolso',category:'Bolsos',material:'Algodón',img:original,photos:[],story:'Mi pieza',stock:'Disponible'}];
+ const app=await setup('nuevo',{search:'?editar=photo',rows,imageOps}),el=id=>app.document.getElementById(id);
+ el('approveImage').onclick();assert.match(el('photoStatus').textContent,/aprobadas/);
+ el('photoBrightness').value='115';el('photoContrast').value='110';el('photoRotation').value='90';await el('generateImage').onclick();
+ assert.match(el('photoStatus').textContent,/pendientes/);assert.equal(el('restoreImage').disabled,false);assert.ok(imageOps.some(x=>x[0]==='draw'&&x[1]==='brightness(115%) contrast(110%)'));
+ await el('generateImage').onclick();assert.deepEqual(imageOps.filter(x=>x[0]==='source').map(x=>x[1]),[original,original]);assert.equal(app.calls.filter(x=>x[0]==='save').length,0);
+ el('restoreImage').onclick();assert.equal(app.document.querySelector('#imagePreview img').src,original);assert.equal(el('photoBrightness').value,'100');assert.equal(el('restoreImage').disabled,true);await app.submit();assert.equal(rows[0].img,original);
+ await el('generateImage').onclick();await app.submit();assert.equal(rows[0].img,'data:image/jpeg;base64,cHJlcGFyZWQ=');
+});
+
+test('Pollinations proposals require acceptance, stay tied to the original and save only after review',async()=>{
+ const original='https://storage.example/original.jpg',rows=[{id:'photo',name:'Mi bolso',img:original,photos:[],story:'Mi pieza'}],edited='data:image/jpeg;base64,/9j/2Q==';let requests=0;
+ const app=await setup('nuevo',{search:'?editar=photo',rows,imageOps:[],overrides:{aiQuota:async()=>({remaining:2}),improvePhoto:async()=>{requests++;return {image:edited,quota:{remaining:1}};}}}),el=id=>app.document.getElementById(id);
+ await el('photoAIGenerate').onclick();assert.equal(requests,1);assert.equal(app.document.querySelector('#imagePreview img').src,original);assert.equal(el('photoAICompare').hidden,false);assert.equal(app.calls.filter(x=>x[0]==='save').length,0);
+ el('photoAIKeep').onclick();assert.equal(app.document.querySelector('#imagePreview img').src,original);
+ await el('photoAIGenerate').onclick();el('photoAIAccept').onclick();assert.equal(app.document.querySelector('#imagePreview img').src,edited);assert.match(el('photoStatus').textContent,/pendientes/);await app.submit();assert.equal(rows[0].img,edited);
+});
+
+test('each editor step saves published changes without repeated approvals or navigation, retaining every photo',async()=>{
+ const rows=[{id:'published',name:'Aretes',category:'Accesorios',material:'Algodón',img:'https://storage.example/front.jpg',photos:['https://storage.example/side.jpg'],story:'Mi pieza',published:true}],app=await setup('nuevo',{search:'?editar=published',rows}),doc=app.document;
+ assert.equal(doc.querySelectorAll('[data-save-step]').length,4);assert.equal(doc.getElementById('approveText').hidden,true);
+ for(let step=0;step<4;step++){doc.querySelector('[data-editor-step="'+step+'"]').onclick();app.input('approveTextArea','Cambio '+step);app.input('prodPrice',String(10+step));await doc.querySelector('#editorStep'+step+' [data-save-step]').onclick();assert.equal(doc.getElementById('editorStep'+step).hidden,false);assert.equal(rows[0].published,true);assert.equal(rows[0].story,'Cambio '+step);assert.equal(rows[0].price,String(10+step));assert.equal(rows[0].photos[0],'https://storage.example/side.jpg');}
+});
+
+test('step saves keep drafts and moderated products unpublished without approvals',async()=>{
+ for(const moderated of [false,true]){const app=await setup('nuevo',{rows:moderated?[{id:'held',name:'Aretes',published:true,moderationHidden:true,img:'https://storage.example/front.jpg',story:'Mi pieza'}]:[],search:moderated?'?editar=held':''});app.input('prodName','Aretes');await app.document.querySelector('[data-save-step]').onclick();assert.equal(app.rows[0].published,false);assert.match(app.document.querySelector('[data-step-save-status]').textContent,/Borrador guardado/);}
+});
+
+test('duplicate and failed step saves preserve edits and publication status',async()=>{
+ const pending=deferred();let count=0;const rows=[{id:'p',name:'Aretes',published:true,img:'https://storage.example/front.jpg',story:'Original'}],app=await setup('nuevo',{search:'?editar=p',rows,overrides:{saveProduct:()=>{count++;return pending.promise;}}});app.input('approveTextArea','Cambio pendiente');const button=app.document.querySelector('[data-save-step]'),request=button.onclick();await button.onclick();assert.equal(count,1);pending.reject(Error('Sin conexión'));await request;assert.equal(app.rows[0].published,true);assert.equal(app.document.getElementById('approveTextArea').value,'Cambio pendiente');assert.match(app.document.querySelector('[data-step-save-status]').textContent,/Sin conexión/);
+});
+
 test('pending saves are not duplicated and failures preserve user input without success messages',async()=>{
  const request=deferred();let count=0;
  const app=await setup('nuevo',{overrides:{saveProduct:()=>{count++;return request.promise;}}});app.input('prodName','Mi producto');
@@ -175,4 +210,14 @@ test('dictated profile history is included in the existing explicit profile save
  }
  assert.equal(saved,undefined);app.window.khipuVoice.cancel();const form=app.document.getElementById('profileForm');await form.onsubmit({preventDefault(){},currentTarget:form});
  assert.equal(saved.bio,'Soy artesana de Lambayeque.');assert.equal(saved.story,'Comparto mi oficio.');
+});
+test('Mi plan is a protected workspace route and does not fetch the product editor data',async()=>{
+ const result={settings:{enabled:false,price:19},plan:'basic',limits:[{plan:'basic',per_content:2,per_month:20},{plan:'pro',per_content:6,per_month:100}],monthly_used:0,requests:[]};
+ const app=await setup('mi-plan',{overrides:{planMine:async()=>result,planQR:()=>'',myProducts:async()=>{throw Error('Products should not load');}}});
+ assert.match(app.document.getElementById('myPlanContent').textContent,/Khipu Básico/);assert.equal(app.document.querySelector('.side a[href="mi-plan.html"]').getAttribute('aria-current'),'page');
+ const blocked=await setup('mi-plan',{overrides:{approved:false,user:null,init:async()=>({approved:false,user:null}),planMine:async()=>{throw Error('Must not load');}}});assert.ok(blocked.calls.some(x=>x[0]==='redirect'&&x[1]==='acceso.html'));assert.equal(blocked.document.getElementById('planRequestForm'),null);
+});
+test('public plan comparison remains usable without waiting for authentication',async()=>{
+ const app=await setup('planes',{overrides:{init:async()=>{throw Error('No Auth dependency');},planPublic:async()=>({available:false})}});
+ assert.match(app.document.querySelector('h1').textContent,/Planes para tu taller/);assert.match(app.document.getElementById('planComparison').textContent,/Precio por confirmar/);assert.ok(app.document.querySelector('a[href="mi-plan.html"]'));
 });

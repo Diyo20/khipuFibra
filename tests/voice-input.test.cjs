@@ -13,7 +13,8 @@ function setup({supported=true,prefixed=false,secure=true,throws=false}={}){
  const window={isSecureContext:secure,addEventListener:(name,handler)=>listeners[name]=handler};
  if(supported)window[prefixed?'webkitSpeechRecognition':'SpeechRecognition']=Recognition;
  const timers=new Map();let timer=0;
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/voice-input.js'),'utf8'),{window,document,Event:dom.window.Event,MutationObserver:dom.window.MutationObserver,setTimeout:fn=>{timers.set(++timer,fn);return timer;},clearTimeout:id=>timers.delete(id)});
+ const sandbox={window,document,location:{search:''},URLSearchParams,Event:dom.window.Event,MutationObserver:dom.window.MutationObserver,setTimeout:fn=>{timers.set(++timer,fn);return timer;},clearTimeout:id=>timers.delete(id)};
+ for(const file of ['writing-fields.js','voice-input.js'])vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets',file),'utf8'),sandbox);
  const root=document.getElementById('root');window.khipuVoice.mount(root);
  const target=id=>document.getElementById(id),box=id=>target(id).nextElementSibling,button=id=>box(id).querySelector('button');
  const result=(recognition,entries,resultIndex=0)=>recognition.onresult({resultIndex,results:entries.map(([transcript,isFinal=true])=>Object.assign([{transcript}],{isFinal}))});

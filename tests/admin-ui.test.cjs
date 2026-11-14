@@ -52,7 +52,8 @@ test('admin navigation shows one section at a time and preserves access tools be
 test('admin summary reuses server counts without requesting commerce data and keeps every access action',async()=>{
  const app=await setup();let commerceReads=0;app.cloud.adminCommerce=async()=>{commerceReads++;return {available:false};};
  assert.deepEqual([...app.document.querySelectorAll('.admin-counts strong')].map(node=>node.textContent),['1','1','0']);
- assert.equal(app.document.querySelectorAll('[data-admin-view]').length,5);assert.equal(app.document.querySelectorAll('#adminLogout').length,1);
+ assert.equal(app.document.querySelectorAll('[data-admin-view]').length,6);assert.equal(app.document.querySelectorAll('#adminLogout').length,1);
+ assert.ok(app.document.querySelector('[data-admin-view="plans"]'));
  const reads=app.calls.length;app.document.querySelector('[data-admin-go="access"]').onclick();assert.equal(app.calls.length,reads);assert.equal(commerceReads,0);
  assert.ok(app.document.querySelector('.role-badge'));assert.ok(app.document.querySelector('.state-pending'));assert.ok(app.document.getElementById('inviteForm'));assert.ok(app.document.querySelector('[data-action="approve"]'));
  app.document.querySelector('[data-admin-view="overview"]').onclick();assert.equal(app.document.getElementById('adminOverviewPanel').hidden,false);assert.equal(app.document.getElementById('adminAccessPanel').hidden,true);

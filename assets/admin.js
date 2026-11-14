@@ -4,7 +4,7 @@
  const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const names={pending:'Pendiente',active:'Activa',suspended:'Suspendida',rejected:'Rechazada'};
  const actions={approve:'Aprobar',reject:'Rechazar',suspend:'Suspender',reactivate:'Reactivar'};
- const eventNames={approve:'Cuenta aprobada',reject:'Solicitud rechazada',suspend:'Acceso suspendido',reactivate:'Acceso reactivado',bootstrap_admin:'Administrador inicial configurado',legacy_access_imported:'Accesos anteriores migrados',invitation_prepared:'Invitación preparada',invitation_claimed:'Invitación aceptada',invitation_revoked:'Invitación revocada',invitation_email_sent:'Correo de invitación enviado',invitation_email_failed:'Falló el envío de invitación',product_hide:'Producto ocultado',product_restore:'Bloqueo de producto retirado',review_approve:'Valoración aprobada',review_hide:'Valoración ocultada'};
+ const eventNames={plan_approve:'Plan Pro aprobado',plan_reject:'Solicitud Pro rechazada',plan_adjust:'Suscripción ajustada',plan_settings_updated:'Configuración de planes actualizada',approve:'Cuenta aprobada',reject:'Solicitud rechazada',suspend:'Acceso suspendido',reactivate:'Acceso reactivado',bootstrap_admin:'Administrador inicial configurado',legacy_access_imported:'Accesos anteriores migrados',invitation_prepared:'Invitación preparada',invitation_claimed:'Invitación aceptada',invitation_revoked:'Invitación revocada',invitation_email_sent:'Correo de invitación enviado',invitation_email_failed:'Falló el envío de invitación',product_hide:'Producto ocultado',product_restore:'Bloqueo de producto retirado',review_approve:'Valoración aprobada',review_hide:'Valoración ocultada'};
  let data=null,busy=false,selectedAction=null,adminUserId=null,checking=false,selectedView='overview',renderEpoch=0;
  const date=value=>value?new Date(value).toLocaleString('es-PE'):'—';
  function notice(text,error=false){const box=document.getElementById('adminMessage');box.hidden=false;box.className=error?'notice':'success';box.textContent=text;box.focus();}
@@ -30,7 +30,8 @@
   const note=document.createElement('p');note.className='admin-summary-note';note.textContent='Revisa las solicitudes pendientes en Accesos y consulta las decisiones anteriores en Historial.';overview.append(note);
   const commerce=document.createElement('section');commerce.id='adminCommercePanel';commerce.className='admin-view';root.insertBefore(commerce,sections[2]);
   sections[2].id='adminHistoryPanel';sections[2].classList.add('admin-view');sections[3].classList.add('admin-view');
-  const views={overview:[overview,'Resumen','⌂'],access:[access,'Accesos','◉'],commerce:[commerce,'Productos y valoraciones','▦'],history:[sections[2],'Historial','◷'],security:[sections[3],'Seguridad','◇']};
+  const plans=document.createElement('section');plans.id='adminPlansPanel';plans.className='admin-view';root.insertBefore(plans,sections[2]);
+  const views={overview:[overview,'Resumen','⌂'],access:[access,'Accesos','◉'],commerce:[commerce,'Productos y valoraciones','▦'],plans:[plans,'Planes y pagos','◇'],history:[sections[2],'Historial','◷'],security:[sections[3],'Seguridad','◇']};
   const shell=document.createElement('div');shell.className='admin-shell';const sidebar=document.createElement('aside');sidebar.className='admin-sidebar';
   sidebar.innerHTML='<details class="admin-menu" id="adminMenu" open><summary>Administración <span>Menú ▾</span></summary><div class="admin-nav-content"><p class="admin-nav-brand">khipuFibra<span>Administración</span></p></div></details>';
   const sideContent=sidebar.querySelector('.admin-nav-content');
@@ -41,6 +42,7 @@
   const menu=sidebar.querySelector('details');if(window.matchMedia?.('(max-width:900px)').matches)menu.open=false;
   const select=(view,focus=false)=>{selectedView=view;Object.entries(views).forEach(([key,[panel]])=>panel.hidden=key!==view);nav.querySelectorAll('button').forEach(button=>{const active=button.dataset.adminView===view;button.setAttribute('aria-pressed',String(active));button.classList.toggle('alt',!active);});
    if(view==='commerce'&&!commerce.dataset.mounted){commerce.dataset.mounted='1';if(window.khipuCommerce)window.khipuCommerce.mount(commerce,{cloud,onSaved:load});else commerce.innerHTML='<p>La gestión comercial no está disponible.</p>';}
+   if(view==='plans'&&!plans.dataset.mounted){plans.dataset.mounted='1';if(window.khipuPlanAdmin)window.khipuPlanAdmin.mount(plans,{cloud,onSaved:load});else plans.innerHTML='<h2>Planes y pagos</h2><p>La gestión de planes no está disponible.</p>';}
    if(focus){const heading=views[view][0].querySelector('h2');if(heading){heading.setAttribute('tabindex','-1');heading.focus?.();}if(window.matchMedia?.('(max-width:900px)').matches)menu.open=false;}
   };
   nav.querySelectorAll('button').forEach(button=>button.onclick=()=>select(button.dataset.adminView,true));overviewLinks.querySelectorAll('button').forEach(button=>button.onclick=()=>select(button.dataset.adminGo,true));select(selectedView);

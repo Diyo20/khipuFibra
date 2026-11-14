@@ -12,7 +12,7 @@ function setup(){
  const api={auth,rpc:async name=>({data:name==='khipu_request_access'?{role:'artisan',status:'pending'}:null,error:null})};
  const events=[];
  const window={KHIPU_CONFIG:{supabaseUrl:'https://project.example',supabasePublishableKey:'public'},supabase:{createClient:()=>api},dispatchEvent:event=>events.push(event)};
- const context={window,location:{href:'https://preview.example/acceso.html',hash:''},sessionStorage,localStorage,URL,URLSearchParams,console,setTimeout,CustomEvent:class {constructor(type,options){this.type=type;this.detail=options.detail;}}};
+ const context={window,location:{href:'https://preview.example/acceso.html',hash:''},sessionStorage,localStorage,URL,URLSearchParams,crypto:require('node:crypto').webcrypto,console,setTimeout,CustomEvent:class {constructor(type,options){this.type=type;this.detail=options.detail;}}};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/cloud.js'),'utf8'),context);
  return {cloud:window.khipuCloud,api,calls,sessionStorage,localStorage,events,emit:(...args)=>callback(...args)};
 }

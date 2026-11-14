@@ -219,4 +219,78 @@ test('Phase 1 migrations enforce real PostgreSQL permissions and account transit
   await db.exec(fs.readFileSync(path.join(root,'supabase/tests/commerce_remote_smoke.sql'),'utf8'));
   assert.equal((await db.query('select count(*)::int n from auth.users')).rows[0].n,before);
  });
+ await t.test('AI attempts are reserved only by the server, persist across saves, and honor plans and expiry',async()=>{
+  await db.exec(migration('_writing_assistance.sql'));
+  const reserve=async(tool,entity=null,user=ids.a)=>{await db.exec('set role service_role');try{return (await db.query('select public.khipu_ai_reserve($1,$2,$3) as value',[user,tool,entity])).rows[0].value;}finally{await db.exec('reset role');}};
+  await denied('a','select * from public.khipu_ai_requests');
+  await denied('a','select public.khipu_ai_reserve($1,$2,null)',[ids.a,'product_story']);
+  await denied('a','select khipu_private.khipu_ai_budget($1,$2,null)',[ids.b,'profile_bio']);
+  await denied(null,"select public.khipu_ai_quota('product_story',null)");
+  await denied('a',"select public.khipu_ai_settings('basic',30,1000)");
+  const before=await rpc('a','khipu_ai_quota',["'product_story'",'null']);assert.equal(before.remaining,2);
+  assert.equal((await reserve('product_story')).quota.remaining,1);
+  assert.equal((await reserve('product_story')).quota.remaining,0);
+  assert.equal((await reserve('product_story')).allowed,false);
+  // A saved draft adopts its reservations instead of resetting attempts.
+  const saved='30000000-0000-0000-0000-000000000077';
+  await as('a','insert into public.productos(id,owner_id,artisan_id,name) values($1,$2,$3,$4)',[saved,ids.a,profileA,'Borrador con voz']);
+  assert.equal((await rpc('a','khipu_ai_quota',["'product_story'",'$1'],[saved])).remaining,0);
+  await assert.rejects(reserve('product_story',productB));
+  await assert.rejects(reserve('moderation'));
+  await assert.rejects(reserve('profile_bio',null,ids.unverified));
+  await db.query("insert into public.khipu_ai_plans(user_id,plan,expires_at) values($1,'pro',now()+interval '1 day')",[ids.a]);
+  assert.equal((await rpc('a','khipu_ai_quota',["'product_story'",'$1'],[saved])).remaining,4);
+  await db.query("update public.khipu_ai_plans set expires_at=now()-interval '1 day' where user_id=$1",[ids.a]);
+  assert.equal((await rpc('a','khipu_ai_quota',["'product_story'",'$1'],[saved])).plan,'basic');
+  await rpc('admin','khipu_ai_settings',["'basic'",'3','2']);
+  assert.equal((await reserve('profile_bio')).allowed,false); // account monthly limit is shared across tools
+  assert.equal((await db.query("select count(*)::int n from public.khipu_admin_events where action='ai_limits_updated'")).rows[0].n,1);
+  await db.exec(fs.readFileSync(path.join(root,'supabase/tests/writing_remote_smoke.sql'),'utf8'));
+ });
+   await t.test('image quotas preserve owner checks, server-only reservations and plan limits',async()=>{
+    await db.exec(migration('_product_image_ai.sql'));
+    await denied(null,"select public.khipu_ai_quota('generate_image',null)");
+    await denied('a','select public.khipu_ai_reserve($1,$2,null)',[ids.a,'generate_image']);
+    await assert.rejects(rpc('a','khipu_ai_quota',["'generate_image'",'$1'],[productB]));
+    const quota=await rpc('a','khipu_ai_quota',["'generate_image'",'null']);assert.equal(quota.plan,'basic');assert.equal(quota.remaining,0); // monthly cap already used in previous test
+    await db.exec('set role service_role');try{const denied=await db.query("select public.khipu_ai_reserve($1,'generate_image',null) as value",[ids.a]);assert.equal(denied.rows[0].value.allowed,false);}finally{await db.exec('reset role');}
+    await db.exec(fs.readFileSync(path.join(root,'supabase/tests/images_remote_smoke.sql'),'utf8'));
+   });
+   await t.test('Yape requests require private ownership and verified payments before activating or renewing Pro',async()=>{
+  await db.exec(migration('_plans_yape.sql'));
+  const pub=await rpc(null,'khipu_plan_public');assert.equal(pub.settings.enabled,false);assert.equal(pub.requests,undefined);
+  await denied(null,'select public.khipu_plan_my()');await denied('a','select public.khipu_plan_admin()');
+  await denied('a','select * from public.khipu_plan_payments');
+  await assert.rejects(rpc('a','khipu_plan_submit',['$1','null','19'],['primera referencia']));
+  await assert.rejects(rpc('admin','khipu_plan_config',['19',"'Titular'","'Pagar el importe exacto'","''",'true']));
+  const qr=ids.admin+'/qr.png',proof=ids.a+'/proof.png';
+  await as('admin',"insert into storage.objects(bucket_id,name) values('plan-qr',$1)",[qr]);
+  await denied('a',"insert into storage.objects(bucket_id,name) values('plan-qr',$1)",[ids.a+'/fake.png']);
+  await as('a',"insert into storage.objects(bucket_id,name) values('plan-proofs',$1)",[proof]);
+  assert.equal((await as('b',"select * from storage.objects where bucket_id='plan-proofs'")).rows.length,0);
+  assert.equal((await as(null,"select * from storage.objects where bucket_id='plan-proofs'")).rows.length,0);
+  await denied('b',"insert into storage.objects(bucket_id,name) values('plan-proofs',$1)",[proof]);
+  assert.equal((await as('admin',"select * from storage.objects where bucket_id='plan-proofs'")).rows.length,1);
+  await rpc('admin','khipu_plan_config',['19',"'Titular real'","'Comprobar el titular y pagar 19 soles'",'$1','true'],[qr]);
+  await assert.rejects(rpc('b','khipu_plan_submit',["'captura ajena'",'$1','19'],[proof]));
+  await assert.rejects(rpc('a','khipu_plan_submit',["'precio falso'",'null','1']));
+  const pending=await rpc('a','khipu_plan_submit',["'pago uno'",'$1','19'],[proof]);
+  assert.equal(pending.status,'pending');assert.equal((await rpc('a','khipu_plan_my')).plan,'basic');
+  await assert.rejects(rpc('a','khipu_plan_submit',["'duplicado'",'null','19']));
+  await denied('a','select public.khipu_plan_decide($1,$2,$3,$4,true)',[pending.id,'approve','Motivo suficiente','real-001']);
+  await assert.rejects(rpc('admin','khipu_plan_decide',['$1',"'approve'","'Revisado'","'real-001'",'false'],[pending.id]));
+  await rpc('admin','khipu_plan_decide',['$1',"'approve'","'Abono comprobado en cuenta'","'real-001'",'true'],[pending.id]);
+  const first=await rpc('a','khipu_plan_my');assert.equal(first.plan,'pro');
+  await assert.rejects(rpc('admin','khipu_plan_decide',['$1',"'approve'","'Repetir'","'real-001'",'true'],[pending.id]));
+  const renewal=await rpc('a','khipu_plan_submit',["'pago dos'",'null','19']);
+  await assert.rejects(rpc('admin','khipu_plan_decide',['$1',"'approve'","'Misma referencia'","'real-001'",'true'],[renewal.id]));
+  assert.equal((await rpc('a','khipu_plan_my')).expires_at,first.expires_at);
+  await rpc('admin','khipu_plan_decide',['$1',"'approve'","'Renovación comprobada'","'real-002'",'true'],[renewal.id]);
+  assert.ok(new Date((await rpc('a','khipu_plan_my')).expires_at)>new Date(first.expires_at));
+  await rpc('admin','khipu_plan_adjust',['$1',"now()-interval '1 minute'","'Finalización solicitada'"],[ids.a]);
+  assert.equal((await rpc('a','khipu_plan_my')).plan,'basic');
+  assert.equal((await as('b','select public.khipu_plan_my() as value')).rows[0].value.requests.length,0);
+  assert.equal((await db.query("select count(*)::int n from public.khipu_admin_events where action='plan_approve'")).rows[0].n,2);
+  await db.exec(fs.readFileSync(path.join(root,'supabase/tests/plans_remote_smoke.sql'),'utf8'));
+ });
 });

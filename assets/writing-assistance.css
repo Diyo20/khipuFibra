@@ -1,0 +1,18 @@
+/* Scoped controls; the existing site palette and layouts remain in place. */
+.voice-input,.text-assist{--writing-paper:#F7F3EB;--writing-ink:#29251F;--writing-accent:#8C402C;min-width:0;color:var(--writing-ink)}
+.voice-input{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-block:10px 16px}
+.voice-input>button{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}
+.voice-input>button::before{content:'';display:block;width:18px;height:18px;background:currentColor;mask:url('microphone.svg') center/contain no-repeat}
+.voice-input>button[aria-pressed=true]{background:var(--writing-accent);border-color:var(--writing-accent);color:var(--writing-paper)}
+.voice-input>p{flex-basis:100%;margin:0;max-width:65ch;overflow-wrap:anywhere}.voice-input [hidden]{display:none!important}
+.voice-status{color:var(--ink)}.voice-preview{color:var(--muted);font-style:italic}.voice-preview:empty{display:none}
+.voice-compact .voice-status{font-size:13px}.voice-compact{gap:6px 12px}.voice-compact>button{min-height:44px;padding:8px 12px;font-size:14px}
+.text-assist{margin:12px 0 20px;padding:16px;background:var(--writing-paper);border:1px solid #BE9D86;border-left:3px solid var(--writing-accent);border-radius:10px}
+.text-assist>.small{margin:10px 0 0;color:var(--writing-ink)}.text-assist .btn{color:var(--writing-accent);border-color:var(--writing-accent)}
+.text-assist .btn:not(.alt){background:var(--writing-accent);color:var(--writing-paper)}
+.text-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:20px}.text-comparison[hidden]{display:none}
+.text-comparison label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:8px}
+.text-comparison textarea{width:100%;min-height:160px;padding:12px;border:1px solid #BE9D86;background:var(--writing-paper);color:var(--writing-ink);border-radius:6px;font:inherit;resize:vertical}
+.text-comparison>div:nth-child(2) textarea{border-color:var(--writing-accent)}.text-comparison>.row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px}
+.text-assist :focus-visible{outline:3px solid var(--writing-accent);outline-offset:3px}
+@media(max-width:599px){.text-comparison{grid-template-columns:minmax(0,1fr)}.text-comparison .btn{width:100%;justify-content:center}.text-assist{padding:14px}.voice-input{max-width:100%}}

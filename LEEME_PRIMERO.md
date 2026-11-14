@@ -1,5 +1,13 @@
 # khipuFibra — actualización integrada (Vercel + Supabase)
 
+> **13 de noviembre de 2026 · Pollinations:** migración de cuotas de imágenes y función `mejorar-foto` activadas tras autorización. Comprobación remota aprobada y datos sintéticos revertidos, sin gastar Pollen. El botón, comparación y aceptación de fotos siguen en el frontend local, pendiente de publicación. Primera generación real pendiente desde una cuenta activa. Uso y límites: [docs/POLLINATIONS_FOTOS.md](docs/POLLINATIONS_FOTOS.md).
+
+> **13 de noviembre de 2026 · textos y fotos:** Gemini actualizado para redactar descripciones comerciales con datos reales. Ajustes locales gratuitos de iluminación, contraste, giro y margen blanco en el editor de fotografías. Uso: [docs/TEXTOS_Y_FOTOS_SIN_COSTE.md](docs/TEXTOS_Y_FOTOS_SIN_COSTE.md); el estado posterior de IA de imágenes figura en la nota Pollinations anterior.
+
+> **13 de noviembre de 2026 · planes y Yape:** migración de solicitudes y Storage aplicada con autorización, comprobación remota aprobada y datos sintéticos revertidos. Precio inicial S/ 19; solicitudes de pago deshabilitadas, sin QR configurado. La página `planes.html`, «Mi plan» y «Planes y pagos» siguen en el frontend local, pendiente de publicación. Alcance: [docs/PLANES_YAPE.md](docs/PLANES_YAPE.md).
+
+> **13 de noviembre de 2026 · ampliación de escritura:** cuotas aplicadas y función de generación/mejora adaptada a Gemini mediante `GEMINI_API_KEY`, que el propietario indica haber configurado en Supabase. Modelo predeterminado: `gemini-3.5-flash-lite`; configurable solo en servidor mediante `GEMINI_TEXT_MODEL`. Falta probar generación real desde una cuenta piloto. El frontend de dictado transversal y comparación sigue local. Alcance: [docs/ESCRITURA_ASISTIDA.md](docs/ESCRITURA_ASISTIDA.md). No se incorpora transcripción de audio en backend.
+
 > **13 de noviembre de 2026:** dictado por voz incorporado localmente en productos, perfil y promoción, con revisión del texto y manejo de permisos/compatibilidad. Alcance y comprobación: [docs/DICTADO_VOZ.md](docs/DICTADO_VOZ.md). Pendiente probar voz real en teléfonos del piloto.
 
 > **11 de noviembre de 2026 · rediseño integral local:** identidad terracota, borgoña y marfil aplicada a la tienda, acceso, herramientas de artesanas y administración. La fotografía propia del proyecto se conserva en portada. Ajuste de paleta, logo y curva: [docs/AJUSTE_BORGONA.md](docs/AJUSTE_BORGONA.md). Cambios, cobertura y verificación del rediseño anterior: [docs/REDISENO_INTEGRAL.md](docs/REDISENO_INTEGRAL.md). Sin commit, push, despliegue ni modificaciones remotas en este incremento.
@@ -21,7 +29,7 @@ Esta carpeta **conserva tu proyecto HTML/CSS/JS y tu logotipo original** (`asset
 - Una artesana autorizada puede subir fotografías, aprobar el texto y la imagen, y publicar un producto en Supabase Storage + Database. El catálogo se actualiza al recargar.
 - Difusión privada con **las cuatro redes visibles**. Las descripciones pueden editarse y regenerarse; se aprueban antes de compartir. Compartir con imagen, texto y enlace funciona cuando el dispositivo y la red lo permiten; hay alternativas de copiar y descargar.
 - Reseñas enviadas a Supabase **pendientes de aprobación**, no publicadas sin moderación.
-- Función de IA real incluida en `supabase/functions/generar-descripcion/`, **solo funciona cuando configuras y despliegas la función con una clave de API de pago**. No hay IA falsa cuando Supabase está conectado; aparece error si no está habilitada.
+- Función de IA real incluida en `supabase/functions/generar-descripcion/`, conectada a Gemini con una clave privada de API. Puede utilizar el nivel gratuito del modelo según la cuota y el plan del proyecto en Google AI Studio. No hay IA falsa cuando Supabase está conectado; aparece error si no está habilitada.
 
 ## Importante: pendientes que no se activan mágicamente
 
@@ -78,7 +86,7 @@ window.KHIPU_CONFIG = {
 };
 ```
 
-Solo estas dos informaciones pueden estar en JavaScript público. **NO** compartas ni subas la contraseña PostgreSQL, `service_role`, `sb_secret`, credenciales Meta o `OPENAI_API_KEY`.
+Solo estas dos informaciones pueden estar en JavaScript público. **NO** compartas ni subas la contraseña PostgreSQL, `service_role`, `sb_secret`, credenciales Meta ni claves de proveedores de IA como `GEMINI_API_KEY`.
 
 Si dejas el archivo sin configurar, la web continuará en modo local con datos de ejemplo; **NO** estará conectada a Supabase.
 
@@ -95,17 +103,11 @@ En la sección de perfil, los enlaces de redes **solo abren esos perfiles**. Par
 
 ## PASO 5 (opcional ahora). IA real
 
-La función está en `supabase/functions/generar-descripcion/index.ts`. Se puede desplegar mediante Supabase CLI:
+La función está en `supabase/functions/generar-descripcion/{index,handler}.ts` y usa Gemini. Configura `GEMINI_API_KEY` en el panel de Supabase → Edge Functions → Secrets. Opcionalmente puedes definir `GEMINI_TEXT_MODEL`; el valor predeterminado es `gemini-3.5-flash-lite`.
 
-```bash
-npm install -g supabase
-supabase login
-supabase link --project-ref TU_PROJECT_REF
-supabase secrets set OPENAI_API_KEY=TU_API_KEY_PRIVADA
-supabase functions deploy generar-descripcion
-```
+La función valida la sesión mediante Auth y comprueba la membresía antes de reservar un intento. `verify_jwt=false` en la puerta de entrada se conserva porque la validación se realiza dentro del handler. No cambies ese ajuste de forma aislada. El nivel gratuito y sus límites se consultan en Google AI Studio; una suscripción a la aplicación Gemini no determina la facturación de API. No se utiliza OpenAI como alternativa automática.
 
-**No pegues la clave privada en la terminal compartida, capturas ni GitHub.** Una alternativa es definir el secreto desde el panel de Supabase, si tu versión del dashboard lo permite. La API de IA tiene costes propios. Asegúrate de que el control JWT de Edge Functions está habilitado. La función verifica tanto la sesión como la autorización antes de llamar al modelo.
+**No pegues la clave privada en la terminal compartida, capturas ni GitHub.** El frontend no necesita conocerla. Tras configurar el secreto y desplegar la función actualizada, inicia sesión como artesana activa y prueba «Mejorar con IA» con un texto de ejemplo. Revisa la propuesta antes de aceptarla.
 
 Si no despliegas esta función, **la publicación manual y los perfiles sí funcionan**, pero los botones de IA mostrarán un error claro al intentar generar descripciones.
 

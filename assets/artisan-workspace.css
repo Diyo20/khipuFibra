@@ -74,10 +74,13 @@
 .editor-steps button:hover:not([aria-current]){background:#D8C9B5}
 .editor-step-status{font-size:14px;color:#69513D;margin-block:16px 20px}
 .editor-stage[hidden],.editor-navigation button[hidden]{display:none!important}
+.product-editor [hidden]{display:none!important}
 .editor-stage>h2{font-size:30px;margin-top:0}
 .editor-stage .panel>h3{font-size:24px}
 .editor-stage .panel>h2{font-size:28px;margin-block:0 16px}
 .editor-navigation{display:flex;justify-content:space-between;gap:16px;margin-top:24px}
+.editor-step-save{display:flex;align-items:center;flex-wrap:wrap;gap:12px 20px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+.editor-step-save p{flex:1 1 220px;margin:0;overflow-wrap:anywhere}
 #editorNext{margin-left:auto}
 .editor-save-status{font-size:14px;color:#594938;background:var(--soft);border-radius:8px;padding:14px 16px;margin-block:24px 0;overflow-wrap:anywhere}
 .product-review{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;margin-block:24px}
@@ -115,10 +118,3 @@
 .private-content .section-head .btn.alt:hover{color:var(--cream)}
 .private-content .btn.ghost[data-product-action="delete"]:hover{background:#E9C9B7}
 @media(max-width:599px){.workspace-stats p{font-size:13px}.workspace-welcome h1{font-size:34px}}
-/* Dictation uses the same controls as the existing editor. */
-.voice-input{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:12px;min-width:0}
-.voice-input>button{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}
-.voice-input>button::before{content:'●';font-size:12px;color:currentColor}
-.voice-input>button[aria-pressed=true]{background:var(--burgundy);border-color:var(--burgundy);color:var(--cream)}
-.voice-input>p{flex-basis:100%;margin:0;max-width:65ch;overflow-wrap:anywhere}
-.voice-status{color:var(--ink)}.voice-preview{color:var(--muted);font-style:italic}.voice-preview:empty{display:none}

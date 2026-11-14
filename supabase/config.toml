@@ -15,3 +15,10 @@ double_confirm_changes = true
 # This supports projects using asymmetric JWT signing keys as well as legacy keys.
 [functions.admin-invite]
 verify_jwt = false
+
+[functions.generar-descripcion]
+verify_jwt = false
+
+# Validates Auth.getUser and active membership internally before reserving quota.
+[functions.mejorar-foto]
+verify_jwt = false
